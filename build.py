@@ -96,7 +96,7 @@ def runProgram(debug, workingDirectory, environment, arguments):
     if debug:
         print('------------------------------------------------------------------------------------')
         print('subprocess:', arguments)
-        #print('workingDirectory = ' + workingDirectory)
+        print('workingDirectory = ' + workingDirectory)
         #print('environment:', environment)
 
     p = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environment, cwd=workingDirectory)
@@ -650,12 +650,7 @@ def main(argv):
             script = os.path.join(source, 'configure')
             os.chmod(script, 0o777)
 
-            args = []
-            args.append('bash')
-            args.append(script)
-            args.append('--prefix=' + location)
-
-            runProgram(args.debug, source, os.environ, args)
+            runProgram(args.debug, source, os.environ, ['bash', script, '--prefix=' + location])
 
 
     ####################################################################################################
