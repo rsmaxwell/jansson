@@ -584,16 +584,23 @@ def main(argv):
         if not os.path.exists(temp):
             os.makedirs(temp)
 
-        targz = os.path.abspath(temp + '/' + 'jansson-2.9.tar.gz')
+        srctargz = os.path.abspath(src + '/archive/' + 'jansson-2.9.tar.gz')
 
-        if args.debug:
-            print('src = ' + targz)
+        if os.path.exists(srctargz):
+            if args.debug:
+                print('Archive file already exists: ' + srctargz)
+        else:
+            if args.debug:
+                print('Downloading ' + srctargz)
 
-        # Download the jansson package
-        url = 'http://www.digip.org/jansson/releases/jansson-2.9.tar.gz'
-        urllib.request.urlretrieve(url, targz)
+            if not os.path.exists(src + '/archive/'):
+                os.makedirs(src + '/archive/')
 
-        # Expand the archieve
+            url = 'http://www.digip.org/jansson/releases/jansson-2.9.tar.gz'
+            urllib.request.urlretrieve(url, srctargz)
+
+        temptargz = os.path.abspath(temp + '/' + 'jansson-2.9.tar.gz')
+        shutil.copy2(srctargz, temptargz)
 
         inF = gzip.GzipFile(temp + '/jansson-2.9.tar.gz', 'rb')
         s = inF.read()
