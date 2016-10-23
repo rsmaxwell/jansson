@@ -19,13 +19,6 @@ import xml.etree.ElementTree as ET
 import urllib.request
 import json
 
-#architecture = 'undefined'
-#operatingSystem = 'undefined'
-#linker = 'undefined'
-#aol = 'undefined'
-
-#args.debug=False
-#version='SNAPSHOT'
 
 
 ####################################################################################################
@@ -192,47 +185,6 @@ def parseBuildNumberFromMetadata(debug, content):
 
     return int(buildNumber.text)
 
-
-
-####################################################################################################
-# Read the metadata and return the version
-####################################################################################################
-
-#   def getReleaseNumberFromMetadata(baseUrl, groupId, artifactId):
-#
-#       metadataUrl = baseUrl + '/' + groupId.replace('.', '/') + '/' + artifactId + '/' + 'maven-metadata.xml'
-#
-#       # Get the metadata to discover the current build number
-#       r = requests.get(metadataUrl, stream=True)
-#
-#       # Upload the given file
-#       if r.status_code == 200: # http.HTTPStatus.OK.value
-#           if args.debug:
-#               print('getVersionFromMetadata')
-#               print('    Artifact was found in Nexus')
-#
-#           releaseNumber = parseReleaseNumberFromMetadata(r.text)
-#
-#
-#       elif r.status_code == 404: # http.HTTPStatus.NOT_FOUND.value
-#           if args.debug:
-#               print('getVersionFromMetadata')
-#               print('    Artifact not found in Nexus')
-#           releaseNumber = '0'
-#
-#
-#       else:
-#           print('Unexpected Http response ' + str(r.status_code) + ' when getting: maven-metadata.xml')
-#           print('    metadataUrl: ' + metadataUrl)
-#           content = r.raw.decode('utf-8')
-#           print('Content =', content)
-#           sys.exit(99)
-#
-#       if args.debug:
-#           print('getReleaseNumberFromMetadata')
-#           print('    releaseNumber = ' + releaseNumber)
-#
-#       return releaseNumber
 
 ####################################################################################################
 # Read the metadata and return the version
@@ -430,38 +382,6 @@ def makePom(groupId, artifactId, version, packaging):
         buffer.write(line.encode('utf-8'))
     return buffer
 
-####################################################################################################
-# Upload a file and its md5 and its sha1 to Nexus
-####################################################################################################
-
-#   def generateNextVersion(releaseNumber):
-#
-#       if args.debug:
-#           print('generateNextVersion')
-#           print('    releaseNumber =', releaseNumber)
-#
-#       # Split the releaseNumber into dot separated string
-#       words = releaseNumber.split('.')
-#       length = len(words)
-#       lastWord = words[length - 1]
-#
-#       try:
-#           newLastWord = str(int(lastWord) + 1)
-#       except ValueError:
-#           print('Cannot increment the releaseNumber = ' + releaseNumber)
-#           print('lastWord = ' + lastWord)
-#           sys.exit(3)
-#
-#       if args.debug:
-#           print('    newLastWord =', newLastWord)
-#
-#       words[length - 1] = str(newLastWord)
-#       version = '.'.join(words)
-#
-#       if args.debug:
-#           print('    version =', version)
-#
-#       return version;
 
 ####################################################################################################
 # Upload a file and its md5 and its sha1 to Nexus
