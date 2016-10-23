@@ -17,14 +17,15 @@ import hashlib
 from io import BytesIO
 import xml.etree.ElementTree as ET
 import urllib.request
+import json
 
-architecture = 'undefined'
-operatingSystem = 'undefined'
-linker = 'undefined'
-aol = 'undefined'
+#architecture = 'undefined'
+#operatingSystem = 'undefined'
+#linker = 'undefined'
+#aol = 'undefined'
 
-verbose=False
-version='SNAPSHOT'
+#args.debug=False
+#version='SNAPSHOT'
 
 
 ####################################################################################################
@@ -97,11 +98,12 @@ def inplace_change(filename, old_string, new_string):
 # Run a program and wait for the result
 ####################################################################################################
 
-def runProgram (arguments, workingDirectory, environment):
+def runProgram(debug, workingDirectory, environment, arguments):
 
-    if verbose:
+    if debug:
         print('------------------------------------------------------------------------------------')
         print('subprocess:', arguments)
+        #print('workingDirectory = ' + workingDirectory)
         #print('environment:', environment)
 
     p = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environment, cwd=workingDirectory)
@@ -109,7 +111,7 @@ def runProgram (arguments, workingDirectory, environment):
     stderr = p.stderr.read().decode('utf-8')
     returncode = p.returncode
 
-    if verbose:
+    if debug:
         print('---------[ stdout ]-----------------------------------------------------------------')
         print(stdout)
         print('---------[ stderr ]-----------------------------------------------------------------')
@@ -128,7 +130,7 @@ def runProgram (arguments, workingDirectory, environment):
 
 def parseReleaseNumberFromMetadata(content):
 
-    if verbose:
+    if args.debug:
         print("parseReleaseNumberFromMetadata")
 
     root = ET.fromstring(content)
@@ -147,7 +149,7 @@ def parseReleaseNumberFromMetadata(content):
         print(content)
         sys.exit(5)
 
-    if verbose:
+    if args.debug:
         print('    release =', release.text)
 
     return release.text
@@ -157,9 +159,9 @@ def parseReleaseNumberFromMetadata(content):
 # Parse the build number from the metadata
 ####################################################################################################
 
-def parseBuildNumberFromMetadata(content):
+def parseBuildNumberFromMetadata(debug, content):
 
-    if verbose:
+    if debug:
         print("parseBuildNumberFromMetadata")
 
     root = ET.fromstring(content)
@@ -185,7 +187,7 @@ def parseBuildNumberFromMetadata(content):
         print(content)
         sys.exit(5)
 
-    if verbose:
+    if debug:
         print('    buildNumber =', buildNumber.text)
 
     return int(buildNumber.text)
@@ -196,68 +198,76 @@ def parseBuildNumberFromMetadata(content):
 # Read the metadata and return the version
 ####################################################################################################
 
-def getReleaseNumberFromMetadata(baseUrl, groupId, artifactId):
-
-    metadataUrl = baseUrl + '/' + groupId.replace('.', '/') + '/' + artifactId + '/' + 'maven-metadata.xml'
-
-    # Get the metadata to discover the current build number
-    r = requests.get(metadataUrl, stream=True)
-
-    # Upload the given file
-    if r.status_code == 200: # http.HTTPStatus.OK.value
-        if verbose:
-            print('getVersionFromMetadata')
-            print('    Artifact was found in Nexus')
-
-        releaseNumber = parseReleaseNumberFromMetadata(r.text)
-
-
-    elif r.status_code == 404: # http.HTTPStatus.NOT_FOUND.value
-        if verbose:
-            print('getVersionFromMetadata')
-            print('    Artifact not found in Nexus')
-        releaseNumber = '0'
-
-
-    else:
-        print('Unexpected Http response ' + str(r.status_code) + ' when getting: maven-metadata.xml')
-        print('    metadataUrl: ' + metadataUrl)
-        content = r.raw.decode('utf-8')
-        print('Content =', content)
-        sys.exit(99)
-
-    if verbose:
-        print('getReleaseNumberFromMetadata')
-        print('    releaseNumber = ' + releaseNumber)
-
-    return releaseNumber
+#   def getReleaseNumberFromMetadata(baseUrl, groupId, artifactId):
+#
+#       metadataUrl = baseUrl + '/' + groupId.replace('.', '/') + '/' + artifactId + '/' + 'maven-metadata.xml'
+#
+#       # Get the metadata to discover the current build number
+#       r = requests.get(metadataUrl, stream=True)
+#
+#       # Upload the given file
+#       if r.status_code == 200: # http.HTTPStatus.OK.value
+#           if args.debug:
+#               print('getVersionFromMetadata')
+#               print('    Artifact was found in Nexus')
+#
+#           releaseNumber = parseReleaseNumberFromMetadata(r.text)
+#
+#
+#       elif r.status_code == 404: # http.HTTPStatus.NOT_FOUND.value
+#           if args.debug:
+#               print('getVersionFromMetadata')
+#               print('    Artifact not found in Nexus')
+#           releaseNumber = '0'
+#
+#
+#       else:
+#           print('Unexpected Http response ' + str(r.status_code) + ' when getting: maven-metadata.xml')
+#           print('    metadataUrl: ' + metadataUrl)
+#           content = r.raw.decode('utf-8')
+#           print('Content =', content)
+#           sys.exit(99)
+#
+#       if args.debug:
+#           print('getReleaseNumberFromMetadata')
+#           print('    releaseNumber = ' + releaseNumber)
+#
+#       return releaseNumber
 
 ####################################################################################################
 # Read the metadata and return the version
 ####################################################################################################
 
-def getBuildNumberFromMetadata(baseUrl, groupId, artifactId):
+def getBuildNumberFromMetadata(debug, baseUrl, repositoryPath, groupId, artifactId, version):
 
-    metadataUrl = baseUrl + '/' + groupId.replace('.', '/') + '/' + artifactId + '/' + 'SNAPSHOT' + '/' + 'maven-metadata.xml'
+    if debug:
+        print('getBuildNumberFromMetadata:')
+        print('    baseUrl = ' + baseUrl)
+        print('    repositoryPath = ' + repositoryPath)
+        print('    artifactId = ' + artifactId)
+        print('    version = ' + version)
+
+    metadataUrl = baseUrl + repositoryPath + '/' + groupId.replace('.', '/') + '/' + artifactId + '/' + version + '/' + 'maven-metadata.xml'
+
+    if debug:
+        print('    metadataUrl = ' + metadataUrl)
 
     # Get the metadata to discover the current build number
     r = requests.get(metadataUrl, stream=True)
 
-    # Upload the given file
+    # Use the metadata file to work out the build number
     if r.status_code == 200: # http.HTTPStatus.OK.value
-        if verbose:
+        if debug:
             print('getBuildNumberFromMetadata')
             print('    Artifact was found in Nexus')
 
-        buildNumber = 1 + parseBuildNumberFromMetadata(r.text)
-
+        buildNumber = 1 + parseBuildNumberFromMetadata(debug, r.text)
 
     elif r.status_code == 404: # http.HTTPStatus.NOT_FOUND.value
-        if verbose:
+        if debug:
             print('getBuildNumberFromMetadata')
             print('    Artifact not found in Nexus')
         buildNumber = 1
-
 
     else:
         print('Unexpected Http response ' + str(r.status_code) + ' when getting: maven-metadata.xml')
@@ -266,39 +276,10 @@ def getBuildNumberFromMetadata(baseUrl, groupId, artifactId):
         print('Content =', content)
         sys.exit(99)
 
-    print('buildNumber = ' + str(buildNumber))
+    if debug:
+        print('buildNumber = ' + str(buildNumber))
+
     return str(buildNumber)
-
-
-
-####################################################################################################
-# Utility methods to make usefull endpoints
-####################################################################################################
-
-def makeArtifactEndpoint(host, repository):
-    return 'http://' + host + '/nexus/service/local/repositories/' + repository + '/content'
-
-
-def makeServiceEndpoint(host, repository):
-    return 'http://' + host + '/nexus/service/local/metadata/repositories/' + repository + '/content'
-
-
-def makeMetadataUrl(endpoint, groupId, artifactId):
-    pathname = groupId.replace('.', '/') + '/' + artifactId
-    return endpoint + '/' + pathname
-
-
-def makeReleaseFileUrl(endpoint, groupId, artifactId, version):
-    pathname = groupId.replace('.', '/') + '/' + artifactId + '/' + str(version)
-    filename = artifactId
-    return endpoint + '/' + pathname + '/' + filename
-
-def makeSnapshotFileUrl(endpoint, groupId, artifactId):
-    timestamp = '{:%Y%m%d.%H%M%S}'.format(datetime.datetime.now())
-    buildNumber = getBuildNumberFromMetadata(endpoint, groupId, artifactId)
-    pathname = groupId.replace('.', '/') + '/' + artifactId + '/' + 'SNAPSHOT'
-    filename = artifactId + '-' + timestamp + '-' + buildNumber
-    return endpoint + '/' + pathname + '/' + filename
 
 
 ####################################################################################################
@@ -309,11 +290,17 @@ def makeSnapshotFileUrl(endpoint, groupId, artifactId):
 #
 ####################################################################################################
 
-def rebuildMetadata(url):
+def rebuildMetadata(debug, base, pathname):
 
-    if verbose:
+    if debug:
         print('rebuildMetadata')
-        print('    url =', url)
+        print('    base =', base)
+        print('    pathname =', pathname)
+
+    url = base + pathname
+
+    if debug:
+        print('    url = ' + url)
 
     USER=os.environ["MAXWELLHOUSE_ADMIN_USER"]
     PASSWORD=os.environ["MAXWELLHOUSE_ADMIN_PASS"]
@@ -321,9 +308,7 @@ def rebuildMetadata(url):
     r = requests.delete(url, auth=(USER, PASSWORD))
     statusCode = r.status_code
 
-    if verbose:
-        print('rebuildMetadata')
-        print('    url =', url)
+    if debug:
         print('    statusCode =', statusCode)
 
     return statusCode
@@ -345,7 +330,7 @@ def download(url):
 
     buffer.write(BytesIO(r.content))
 
-    if verbose:
+    if args.debug:
         print('download')
         print('    url =', url)
         print('    statusCode =', statusCode)
@@ -357,9 +342,9 @@ def download(url):
 # Upload a stream to a URL
 ####################################################################################################
 
-def uploadFile(file, url):
+def uploadFile(debug, file, url):
 
-    if verbose:
+    if debug:
         print('uploadFile')
         print('    url =', url)
 
@@ -380,9 +365,7 @@ def uploadFile(file, url):
         print('Error uploading content: statusCode = ', statusCode)
         sys.exit(5)
 
-    if verbose:
-        print('uploadFile')
-        print('    url =', url)
+    if debug:
         print('    statusCode =', statusCode)
 
     return statusCode
@@ -392,15 +375,14 @@ def uploadFile(file, url):
 # Upload a string
 ####################################################################################################
 
-def uploadString(string, url):
+def uploadString(debug, string, url):
 
-    if verbose:
+    if debug:
         print("uploadString")
         print("    string =", string)
-        print("    url =", url)
 
     file = io.StringIO(string)
-    uploadFile(file, url)
+    uploadFile(debug, file, url)
     file.close()
 
 
@@ -408,15 +390,23 @@ def uploadString(string, url):
 # Upload a file and its metadata to Artifact
 ####################################################################################################
 
-def uploadFileAndHashes(file, url):
+def uploadFileAndHashes(debug, file, base, filePath, fileName, packaging):
 
-    if verbose:
-        print("uploadFileAndHashes")
-        print("    url =", url)
+    if debug:
+        print('uploadFileAndHashes:')
+        print('    base = ', base)
+        print('    filePath = ', filePath)
+        print('    fileName = ', fileName)
+        print('    packaging = ', packaging)
 
-    uploadFile(file, url)
-    uploadString(md5(file), url + '.md5')
-    uploadString(sha1(file), url + '.sha1')
+    url = base + filePath + '/' + fileName + '.' + packaging
+
+    if debug:
+        print('    url = ', url)
+
+    uploadFile(debug, file, url)
+    uploadString(debug, md5(file), url + '.md5')
+    uploadString(debug, sha1(file), url + '.sha1')
 
 
 ####################################################################################################
@@ -444,84 +434,77 @@ def makePom(groupId, artifactId, version, packaging):
 # Upload a file and its md5 and its sha1 to Nexus
 ####################################################################################################
 
-def generateNextVersion(releaseNumber):
-
-    if verbose:
-        print('generateNextVersion')
-        print('    releaseNumber =', releaseNumber)
-
-    # Split the releaseNumber into dot separated string
-    words = releaseNumber.split('.')
-    length = len(words)
-    lastWord = words[length - 1]
-
-    try:
-        newLastWord = str(int(lastWord) + 1)
-    except ValueError:
-        print('Cannot increment the releaseNumber = ' + releaseNumber)
-        print('lastWord = ' + lastWord)
-        sys.exit(3)
-
-    if verbose:
-        print('    newLastWord =', newLastWord)
-
-    words[length - 1] = str(newLastWord)
-    version = '.'.join(words)
-
-    if verbose:
-        print('    version =', version)
-
-    return version;
+#   def generateNextVersion(releaseNumber):
+#
+#       if args.debug:
+#           print('generateNextVersion')
+#           print('    releaseNumber =', releaseNumber)
+#
+#       # Split the releaseNumber into dot separated string
+#       words = releaseNumber.split('.')
+#       length = len(words)
+#       lastWord = words[length - 1]
+#
+#       try:
+#           newLastWord = str(int(lastWord) + 1)
+#       except ValueError:
+#           print('Cannot increment the releaseNumber = ' + releaseNumber)
+#           print('lastWord = ' + lastWord)
+#           sys.exit(3)
+#
+#       if args.debug:
+#           print('    newLastWord =', newLastWord)
+#
+#       words[length - 1] = str(newLastWord)
+#       version = '.'.join(words)
+#
+#       if args.debug:
+#           print('    version =', version)
+#
+#       return version;
 
 ####################################################################################################
 # Upload a file and its md5 and its sha1 to Nexus
 ####################################################################################################
 
-def uploadArtifact(host, repository, groupId, artifactId, packaging, localfile):
+def uploadArtifact(debug, base, groupId, artifactId, version, packaging, localfile):
 
-    global version
-
-    if verbose:
+    if debug:
         print('uploadArtifact')
-        print('    host =', host)
-        print('    repository =', repository)
+        print('    base =', base)
+        print('    groupId =', groupId)
         print('    artifactId =', artifactId)
+        print('    version =', version)
         print('    packaging =', packaging)
 
-    baseUrl = makeArtifactEndpoint(host, repository)
-    servicesEndpoint = makeServiceEndpoint(host, repository)
+    snap = version.endswith('SNAPSHOT')
 
-    if verbose:
-        print('    baseUrl =', baseUrl)
-        print('    version =', version)
-
-    if version == 'SNAPSHOT':
-        fileUrl = makeSnapshotFileUrl(baseUrl, groupId, artifactId)
-
+    if snap:
+        repository = 'snapshots'
+        timestamp = '{:%Y%m%d.%H%M%S}'.format(datetime.datetime.now())
+        repositoryPath = '/service/local/repositories/' + repository + '/content/'
+        buildNumber = getBuildNumberFromMetadata(debug, base, repositoryPath, groupId, artifactId, version)
+        fileName = artifactId + '-' + version.replace('SNAPSHOT', timestamp) + '-' + buildNumber
     else:
-        if version == 'NEXT':
-            releaseNumber = getReleaseNumberFromMetadata(baseUrl, groupId, artifactId)
-            version = generateNextVersion(releaseNumber)
+        repository = 'releases'
+        repositoryPath = '/service/local/repositories/' + repository + '/content/'
+        fileName = artifactId
 
-        print('version = ' + version)
-        fileUrl = makeReleaseFileUrl(baseUrl, groupId, artifactId, version)
-
-    if verbose:
-        print('    fileUrl =', fileUrl)
+    filePath = repositoryPath + groupId.replace('.', '/') + '/' + artifactId + '/' + version
 
     # Upload base file
     file = open(localfile, 'rb')
-    uploadFileAndHashes(file, fileUrl + '.' + packaging)
+    uploadFileAndHashes(debug, file, base, filePath, fileName, packaging)
     file.close()
 
     # Upload the pom file
     file = makePom(groupId, artifactId, version, packaging)
-    uploadFileAndHashes(file, fileUrl + '.' + 'pom')
+    uploadFileAndHashes(debug, file, base, filePath, fileName, 'pom')
     file.close()
 
     # Send request to Nexus to rebuild metadata
-    url = makeMetadataUrl(servicesEndpoint, groupId, artifactId)
-    rebuildMetadata(url)
+    servicesPath = '/service/local/metadata/repositories/' + repository + '/content/' + groupId.replace('.', '/') + '/' + artifactId
+    rebuildMetadata(debug, base, servicesPath)
 
 
 ####################################################################################################
@@ -534,29 +517,23 @@ def main(argv):
     # Parse command line arguments
     ####################################################################################################
 
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description='Build and deploy a project.')
 
-    parser.add_argument('targets', type=str, nargs='*', help='a target to be built (default: all)')
-    parser.add_argument("-r", "--release", help="Release a given version")
-    parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
+    parser.add_argument('goals', type=str, nargs='*', help='A list of build goals [default: all]')
+    parser.add_argument("-f", "--file", help="Build file [default: build.json]", default='build.json')
+    parser.add_argument("-X", "--debug", help="Increase output verbosity", action="store_true", default=False)
+    parser.add_argument("-v", "--version", help="Set the release verson [default = 'version' field in build.json]")
 
     args = parser.parse_args()
 
-    if len(args.targets) == 0:
-        targets = ['clean', 'generate', 'configure', 'make', 'dist', 'deploy']
+    if len(args.goals) == 0:
+        goals = ['clean', 'generate', 'configure', 'make', 'dist', 'deploy']
     else:
-        targets = args.targets
+        goals = args.goals
 
-    if args.release:
-        global version
-        version = args.release
-
-    if args.verbose:
-        global verbose
-        verbose = args.verbose
-
-        print('Given targets:  ', args.targets)
-        print('Actual targets: ', targets)
+    if args.debug:
+        print('Given goals:  ', args.goals)
+        print('Actual goals: ', goals)
 
 
     ####################################################################################################
@@ -610,7 +587,7 @@ def main(argv):
             print('The Compiler gcc is not available')
             sys.exit(1)
 
-        stdout, stderr, returncode = runProgram ([gcc, '-v'], os.getcwd(), os.environ)
+        stdout, stderr, returncode = runProgram(args.debug, os.getcwd(), os.environ, [gcc, '-v'])
 
         lines = stderr.splitlines()
         for line in lines:
@@ -624,7 +601,7 @@ def main(argv):
         operatingSystem = string[1]
         linker = string[2]
 
-    if verbose:
+    if args.debug:
         print('architecture    =', architecture)
         print('operatingSystem =', operatingSystem)
         print('linker          =', linker)
@@ -640,6 +617,9 @@ def main(argv):
     # Init
     ####################################################################################################
 
+    with open(args.file) as buildfile:
+        bob = json.load(buildfile)
+
     src = os.path.abspath('./src')
     build = os.path.abspath('./build')
     source = os.path.abspath(build + '/source')
@@ -648,48 +628,50 @@ def main(argv):
     output = os.path.abspath(build + '/output')
     dist = os.path.abspath(build + '/dist')
 
-    JANSSON_VERSION = '2.9'
-    GROUPID = 'com.rsmaxwell.jannson.' + JANSSON_VERSION.replace('.', '-')
-    ARTIFACTID = 'jannson-' + JANSSON_VERSION + '-' + aol
+    GROUPID = bob["groupId"]
+    ARTIFACTID = bob["artifactId"] + '-' + aol
     PACKAGING = 'zip'
     REPOSITORYID = 'MaxwellHouse'
     HOST = 'www.rsmaxwell.co.uk'
+    BASE = bob["distributionManagement"]["repository"]["url"]
+
+    if args.version == None:
+        VERSION = bob["version"]
+    else:
+        VERSION = args.version
+
+    if args.debug:
+        print('VERSION = ' + VERSION)
 
     localfile = os.path.abspath(build + '/dist/' + ARTIFACTID)
-
-
-    repository = 'releases'
-    if version == 'SNAPSHOT':
-        repository = 'snapshots'
-
-    if verbose:
-        print('version = ', version)
-        print('repository = ', repository)
 
     ####################################################################################################
     # Clean
     ####################################################################################################
 
-    if 'clean' in targets:
-        print('target = clean')
+    if 'clean' in goals:
+        print('goal = clean')
         shutil.rmtree(build, ignore_errors=True)
 
     ####################################################################################################
     # Build the source directory
     ####################################################################################################
 
-    if 'generate' in targets:
+    if 'generate' in goals:
 
-        print('target = generate')
+        print('goal = generate')
 
         if not os.path.exists(temp):
             os.makedirs(temp)
 
-        print('src = ' + src + '/' + 'jansson-2.9.tar.gz')
+        targz = os.path.abspath(temp + '/' + 'jansson-2.9.tar.gz')
+
+        if args.debug:
+            print('src = ' + targz)
 
         # Download the jansson package
         url = 'http://www.digip.org/jansson/releases/jansson-2.9.tar.gz'
-        urllib.request.urlretrieve(url, temp + '/jansson-2.9.tar.gz')
+        urllib.request.urlretrieve(url, targz)
 
         # Expand the archieve
 
@@ -712,9 +694,9 @@ def main(argv):
     # Configure
     ####################################################################################################
 
-    if 'configure' in targets:
+    if 'configure' in goals:
 
-        print('target = configure')
+        print('goal = configure')
 
         location = os.path.join(output)
         if not os.path.exists(location):
@@ -746,41 +728,38 @@ def main(argv):
             args.append(script)
             args.append('--prefix=' + location)
 
-            runProgram(args, source, os.environ)
+            runProgram(args.debug, source, os.environ, args)
 
 
     ####################################################################################################
     # Make
     ####################################################################################################
 
-    if 'make' in targets:
+    if 'make' in goals:
 
-        print('target = make')
+        print('goal = make')
 
         if operatingSystem == 'Windows':
-
-            print('operatingSystem = Windows')
-
             environ = os.environ
             environ['BUILD_TYPE'] = 'normal'
             environ['SOURCE'] = sourcesrc
             environ['OUTPUT'] = output
-            runProgram (['make', '-f', src + '/make/' + aol + '.makefile', 'all'], output, environ)
+            runProgram(args.debug, output, environ, ['make', '-f', src + '/make/' + aol + '.makefile', 'all'])
 
 
         else:     # Linux or MinGW or CygWin
-            runProgram (['make', 'clean'], source, os.environ)
-            runProgram (['make'], source, os.environ)
-            runProgram (['make', 'install'], source, os.environ)
+            runProgram(args.debug, source, os.environ, ['make', 'clean'])
+            runProgram(args.debug, source, os.environ, ['make'])
+            runProgram(args.debug, source, os.environ, ['make', 'install'])
 
 
     ####################################################################################################
     # Make the distribution
     ####################################################################################################
 
-    if 'dist' in targets:
+    if 'dist' in goals:
 
-        print('target = dist')
+        print('goal = dist')
 
         if operatingSystem == 'Windows':
 
@@ -813,9 +792,15 @@ def main(argv):
     # Deploy to nexus
     ####################################################################################################
 
-    if 'deploy' in targets:
-        uploadArtifact(HOST, repository, GROUPID, ARTIFACTID, PACKAGING, localfile + '.' + PACKAGING)
+    if 'deploy' in goals:
+        uploadArtifact(args.debug, BASE, GROUPID, ARTIFACTID, VERSION, PACKAGING, localfile + '.' + PACKAGING)
 
+
+    ####################################################################################################
+    # Report success
+    ####################################################################################################
+    print('')
+    print('SUCCESS')
 
 ####################################################################################################
 # Call main routine
