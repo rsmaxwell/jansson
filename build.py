@@ -611,7 +611,7 @@ def main(argv):
         outF.close()
 
         tar = tarfile.open(temp + '/jansson-2.9.tar')
-        tar.extractall(temp + '')
+        tar.extractall(temp)
         tar.close()
 
         shutil.copytree(temp + '/jansson-2.9', source)
