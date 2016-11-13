@@ -1,11 +1,22 @@
 {
-   "groupId": "com.rsmaxwell.jansson.2-9",
+   "groupId": "com.rsmaxwell",
    "artifactId": "jansson-2.9",
-   "version": "0.0.1-SNAPSHOT",
+   "version": "${version}",
+   "properties": {
+      "repository": "snapshots",
+      "version": "0.0.1-SNAPSHOT"
+   },
    "distributionManagement": {
       "repository": {
-         "id": "MaxwellHouse",
-         "url": "http://www.rsmaxwell.co.uk/nexus"
+         "deployment": {
+            "id": "MaxwellHouse",
+            "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/${repository}"
+         },
+         "admin": {
+            "id": "MaxwellHouseAdmin",
+            "url": "http://www.rsmaxwell.co.uk/nexus/service/local/metadata/repositories/${repository}/content"
+         }
       }
    }
 }
+

@@ -18,8 +18,37 @@ from io import BytesIO
 import xml.etree.ElementTree as ET
 import urllib.request
 import json
+from os.path import expanduser
+import http.client
+import zipfile
+
+NONE = 0
+INFO = 1
+VERBOSE = 2
+DEBUG = 3
 
 
+####################################################################################################
+# Replace the variables using a dictionary
+####################################################################################################
+
+def multipleReplace(text, wordDict):
+    for key in wordDict:
+        text = text.replace('${' + key + '}', wordDict[key])
+    return text
+
+####################################################################################################
+# Calculate MD5 hash of a file
+####################################################################################################
+
+def info(config):
+    return config['level'] >= INFO
+
+def verbose(config):
+    return config['level'] >= VERBOSE
+
+def debug(config):
+    return config['level'] >= DEBUG
 
 ####################################################################################################
 # Calculate MD5 hash of a file
@@ -32,7 +61,6 @@ def md5(file):
         hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-
 ####################################################################################################
 # Calculate SHA1 hash of a file
 ####################################################################################################
@@ -43,7 +71,6 @@ def sha1(file):
     for chunk in iter(lambda: file.read(4096), b""):
         hash_sha1.update(chunk)
     return hash_sha1.hexdigest()
-
 
 ####################################################################################################
 # Find a program on the PATH
@@ -66,7 +93,6 @@ def which(program):
                 return exe_file
 
     return None
-
 
 ####################################################################################################
 # inplace_change
@@ -91,9 +117,9 @@ def inplace_change(filename, old_string, new_string):
 # Run a program and wait for the result
 ####################################################################################################
 
-def runProgram(debug, workingDirectory, environment, arguments):
+def runProgram(config, workingDirectory, environment, arguments):
 
-    if debug:
+    if verbose(config):
         print('------------------------------------------------------------------------------------')
         print('subprocess:', arguments)
         print('workingDirectory = ' + workingDirectory)
@@ -104,7 +130,7 @@ def runProgram(debug, workingDirectory, environment, arguments):
     stderr = p.stderr.read().decode('utf-8')
     returncode = p.returncode
 
-    if debug:
+    if verbose(config):
         print('---------[ stdout ]-----------------------------------------------------------------')
         print(stdout)
         print('---------[ stderr ]-----------------------------------------------------------------')
@@ -124,7 +150,7 @@ def runProgram(debug, workingDirectory, environment, arguments):
 def parseReleaseNumberFromMetadata(content):
 
     if args.debug:
-        print("parseReleaseNumberFromMetadata")
+        print("parseReleaseNumberFromMetadata:")
 
     root = ET.fromstring(content)
 
@@ -152,10 +178,10 @@ def parseReleaseNumberFromMetadata(content):
 # Parse the build number from the metadata
 ####################################################################################################
 
-def parseBuildNumberFromMetadata(debug, content):
+def parseSnapshotInfoFromMetadata(config, content):
 
-    if debug:
-        print("parseBuildNumberFromMetadata")
+    if debug(config):
+        print("parseSnapshotInfoFromMetadata:")
 
     root = ET.fromstring(content)
 
@@ -173,6 +199,13 @@ def parseBuildNumberFromMetadata(debug, content):
         print(content)
         sys.exit(4)
 
+    timestamp = snapshot.find('timestamp')
+    if timestamp == None:
+        print('Error parsing metadata: Could not find the \'timestamp\' tag')
+        print('content:')
+        print(content)
+        sys.exit(5)
+
     buildNumber = snapshot.find('buildNumber')
     if buildNumber == None:
         print('Error parsing metadata: Could not find the \'buildNumber\' tag')
@@ -180,28 +213,38 @@ def parseBuildNumberFromMetadata(debug, content):
         print(content)
         sys.exit(5)
 
-    if debug:
+    if debug(config):
         print('    buildNumber =', buildNumber.text)
+        print('    timestamp =', timestamp.text)
 
-    return int(buildNumber.text)
+    info = {'buildNumber': int(buildNumber.text), 'timestamp': timestamp.text}
+    return info
 
 
 ####################################################################################################
 # Read the metadata and return the version
 ####################################################################################################
 
-def getBuildNumberFromMetadata(debug, baseUrl, repositoryPath, groupId, artifactId, version):
+def getSnapshotInfoFromDistributionMetadata(config, groupId, artifactId, aol, version):
 
-    if debug:
-        print('getBuildNumberFromMetadata:')
-        print('    baseUrl = ' + baseUrl)
-        print('    repositoryPath = ' + repositoryPath)
+    snapshotInfo = None
+
+    if debug(config):
+        print('getSnapshotInfoFromDistributionMetadata:')
+        print('    groupId = ' + groupId)
         print('    artifactId = ' + artifactId)
+        print('    aol = ' + aol)
         print('    version = ' + version)
 
-    metadataUrl = baseUrl + repositoryPath + '/' + groupId.replace('.', '/') + '/' + artifactId + '/' + version + '/' + 'maven-metadata.xml'
+    reposArtifactId = artifactId.replace('-', '/')
+    reposArtifactId = reposArtifactId.replace('.', '-')
 
-    if debug:
+    deployment = config['distributionManagement']['repository']['deployment']
+    repositoryUrl = multipleReplace(deployment['url'], config['properties'])
+    metadataUrl = repositoryUrl + '/' + groupId.replace('.', '/') + '/' + reposArtifactId + '/' + artifactId + '-' + aol + '/' + version + '/' + 'maven-metadata.xml'
+
+    if debug(config):
+        print('    repositoryUrl = ' + repositoryUrl)
         print('    metadataUrl = ' + metadataUrl)
 
     # Get the metadata to discover the current build number
@@ -209,17 +252,16 @@ def getBuildNumberFromMetadata(debug, baseUrl, repositoryPath, groupId, artifact
 
     # Use the metadata file to work out the build number
     if r.status_code == 200: # http.HTTPStatus.OK.value
-        if debug:
-            print('getBuildNumberFromMetadata')
+        if debug(config):
+            print('getSnapshotInfoFromDistributionMetadata')
             print('    Artifact was found in Nexus')
 
-        buildNumber = 1 + parseBuildNumberFromMetadata(debug, r.text)
+        snapshotInfo = parseSnapshotInfoFromMetadata(config, r.text)
 
     elif r.status_code == 404: # http.HTTPStatus.NOT_FOUND.value
-        if debug:
-            print('getBuildNumberFromMetadata')
+        if debug(config):
+            print('getSnapshotInfoFromDistributionMetadata')
             print('    Artifact not found in Nexus')
-        buildNumber = 1
 
     else:
         print('Unexpected Http response ' + str(r.status_code) + ' when getting: maven-metadata.xml')
@@ -228,10 +270,120 @@ def getBuildNumberFromMetadata(debug, baseUrl, repositoryPath, groupId, artifact
         print('Content =', content)
         sys.exit(99)
 
-    if debug:
-        print('buildNumber = ' + str(buildNumber))
+    return snapshotInfo
 
-    return str(buildNumber)
+
+####################################################################################################
+# Read the metadata and return the version
+####################################################################################################
+
+def getSnapshotInfoFromRepositoryMetadata(config, repositoryUrl, groupId, artifactId, aol, version):
+
+    snapshotInfo = None
+
+    if debug(config):
+        print('getSnapshotInfoFromRepositoryMetadata:')
+        print('    repositoryUrl = ' + repositoryUrl)
+        print('    groupId = ' + groupId)
+        print('    artifactId = ' + artifactId)
+        print('    version = ' + version)
+
+    reposArtifactId = artifactId.replace('-', '/')
+    reposArtifactId = reposArtifactId.replace('.', '-')
+    metadataUrl = repositoryUrl + '/' + groupId.replace('.', '/') + '/' + reposArtifactId + '/' + artifactId + '-' + aol + '/' + version + '/' + 'maven-metadata.xml'
+
+    if debug(config):
+        print('    metadataUrl = ' + metadataUrl)
+
+    # Get the metadata to discover the current build number
+    r = requests.get(metadataUrl, stream=True)
+
+    # Use the metadata file to work out the build number
+    if r.status_code == 200: # http.HTTPStatus.OK.value
+        if debug(config):
+            print('    Artifact was found in Remote Repository')
+
+        snapshotInfo = parseSnapshotInfoFromMetadata(config, r.text)
+
+    elif r.status_code == 404: # http.HTTPStatus.NOT_FOUND.value
+        if debug(config):
+            print('    Artifact not found in Remote Repository')
+
+    else:
+        print('Unexpected Http response ' + str(r.status_code) + ' when getting: maven-metadata.xml')
+        print('    metadataUrl: ' + metadataUrl)
+        content = r.raw.decode('utf-8')
+        print('Content =', content)
+        sys.exit(99)
+
+    return snapshotInfo
+
+
+####################################################################################################
+# Get the server credentials from the maven xml settings file
+####################################################################################################
+
+def getServersConfigurationFromSettingsFile(config):
+
+    if verbose(config):
+        print('getServersConfigurationFromSettingsFile:')
+
+    home = expanduser('~')
+    settingsfile = os.path.abspath(home + '/.m2/settings.xml')
+
+    if os.path.exists(settingsfile):
+        if verbose(config):
+            print('Found settings file = ' + settingsfile)
+    else:
+        print('Settings file NOT found = ' + settingsfile)
+        sys.exit(3)
+
+    # instead of ET.fromstring(xml)
+    it = ET.iterparse(settingsfile)
+    for _, el in it:
+        if '}' in el.tag:
+            el.tag = el.tag.split('}', 1)[1]  # strip all namespaces
+    root = it.root
+
+    xmlServers = root.find('servers')
+    if xmlServers == None:
+        print('Error parsing settings file: Could not find the \'servers\' tag')
+        sys.exit(3)
+
+    found = None
+    servers = {}
+    for xmlServer in xmlServers:
+
+        id = None
+        username = None
+        password = None
+
+        if debug(config):
+            print('    server:')
+        for item in xmlServer:
+            if debug(config):
+                value = 'None'
+                if item.text != None:
+                    value = item.text
+                print('        tag: ' + item.tag + ' : ' + value)
+
+            if item.tag == 'id':
+                id = item.text
+            elif item.tag == 'username':
+                username = item.text
+            elif item.tag == 'password':
+                password = item.text
+
+        server = {'username': username, 'password': password}
+        servers[id] = server
+
+    if verbose(config):
+        print('    servers:')
+        for item in servers.items():
+            id = item[0]
+            print('        ' + id + ': ( ' + servers[id]['username'] + ' : ' + servers[id]['password'] + ' )')
+
+    return servers
 
 
 ####################################################################################################
@@ -242,83 +394,77 @@ def getBuildNumberFromMetadata(debug, baseUrl, repositoryPath, groupId, artifact
 #
 ####################################################################################################
 
-def rebuildMetadata(debug, base, pathname):
+def rebuildMetadata(config, filepath):
 
-    if debug:
+    if verbose(config):
+        print('rebuildMetadata:')
+        print('    filepath =', filepath)
+
+    admin = config['distributionManagement']['repository']['admin']
+    repositoryId = multipleReplace(admin['id'], config['properties'])
+    repositoryUrl = multipleReplace(admin['url'], config['properties'])
+    url = repositoryUrl + '/' + filepath + '/'
+
+    if debug(config):
         print('rebuildMetadata')
-        print('    base =', base)
-        print('    pathname =', pathname)
-
-    url = base + pathname
-
-    if debug:
+        print('    repositoryId = ' + repositoryId)
+        print('    repositoryUrl = ' + repositoryUrl)
         print('    url = ' + url)
 
-    USER=os.environ["MAXWELLHOUSE_ADMIN_USER"]
-    PASSWORD=os.environ["MAXWELLHOUSE_ADMIN_PASS"]
+    servers = config['servers']
+    server = servers[repositoryId]
+    username = server['username']
+    password = server['password']
 
-    r = requests.delete(url, auth=(USER, PASSWORD))
+    if debug(config):
+        print('    username = ' + username)
+        print('    password = ' + password)
+
+    r = requests.delete(url, auth=(username, password))
     statusCode = r.status_code
 
-    if debug:
-        print('    statusCode =', statusCode)
+    if verbose(config):
+        print('    statusCode = ' + str(statusCode) + ' : ' + http.client.responses[statusCode])
+
+    if statusCode > 400:
+        sys.exit(3)
 
     return statusCode
-
-
-####################################################################################################
-# Download a URL into a buffer
-####################################################################################################
-
-def download(url):
-
-    r = requests.get(url, stream=True)
-
-    statusCode = r.status_code
-
-    if statusCode != 200: # http.HTTPStatus.OK.value
-        print('Error download content: statusCode = ', statusCode)
-        sys.exit(5)
-
-    buffer.write(BytesIO(r.content))
-
-    if args.debug:
-        print('download')
-        print('    url =', url)
-        print('    statusCode =', statusCode)
-
-    return r
 
 
 ####################################################################################################
 # Upload a stream to a URL
 ####################################################################################################
 
-def uploadFile(debug, file, url):
+def uploadFile(config, file, repositoryID, url):
 
-    if debug:
-        print('uploadFile')
+    if verbose(config):
+        print('uploadFile:')
+        print('    repositoryID =', repositoryID)
         print('    url =', url)
 
-    USER=os.environ["MAXWELLHOUSE_ADMIN_USER"]
-    PASSWORD=os.environ["MAXWELLHOUSE_ADMIN_PASS"]
 
     file.seek(0, os.SEEK_END)
     fileSize = file.tell()
 
     file.seek(0, os.SEEK_SET)
 
-    files = {'file': file}
-    r = requests.post(url, files=files, auth=(USER, PASSWORD))
 
+    servers = config['servers']
+    server = servers[repositoryID]
+
+    if debug(config):
+        print('    username = ' + server['username'])
+        print('    password = ' + server['password'])
+
+    r = requests.post(url, data=file, auth=(server['username'], server['password']))
     statusCode = r.status_code
 
-    if statusCode != 201: # http.HTTPStatus.CREATED.value
-        print('Error uploading content: statusCode = ', statusCode)
-        sys.exit(5)
+    if verbose(config):
+        print('    statusCode = ' + str(statusCode) + ' : ' + http.client.responses[statusCode])
 
-    if debug:
-        print('    statusCode =', statusCode)
+    if statusCode >= 400:
+        sys.exit(3)
 
     return statusCode
 
@@ -327,14 +473,15 @@ def uploadFile(debug, file, url):
 # Upload a string
 ####################################################################################################
 
-def uploadString(debug, string, url):
+def uploadString(config, string, repositoryID, url):
 
-    if debug:
-        print("uploadString")
-        print("    string =", string)
+    if verbose(config):
+        print('uploadString')
+        print('    repositoryID =', repositoryID)
+        print('    string =', string)
 
-    file = io.StringIO(string)
-    uploadFile(debug, file, url)
+    file = io.BytesIO(string.encode('utf-8'))
+    uploadFile(config, file, repositoryID, url)
     file.close()
 
 
@@ -342,37 +489,46 @@ def uploadString(debug, string, url):
 # Upload a file and its metadata to Artifact
 ####################################################################################################
 
-def uploadFileAndHashes(debug, file, base, filePath, fileName, packaging):
+def uploadFileAndHashes(config, file, filePath, fileName, packaging):
 
-    if debug:
-        print('uploadFileAndHashes:')
-        print('    base = ', base)
-        print('    filePath = ', filePath)
-        print('    fileName = ', fileName)
-        print('    packaging = ', packaging)
+    if verbose(config):
+        print('uploadFileAndHashes(1):')
+        print('    filePath =', filePath)
+        print('    fileName =', fileName)
+        print('    packaging =', packaging)
 
-    url = base + filePath + '/' + fileName + '.' + packaging
+    deployment = config['distributionManagement']['repository']['deployment']
+    repositoryId = multipleReplace(deployment['id'], config['properties'])
+    repositoryUrl = multipleReplace(deployment['url'], config['properties'])
+    url = repositoryUrl + '/' + filePath + '/' + fileName + '.' + packaging
 
-    if debug:
+    if debug(config):
+        print('uploadFileAndHashes(2)')
+        print('    repositoryId =', repositoryId)
+        print('    repositoryUrl =', repositoryUrl)
         print('    url = ', url)
 
-    uploadFile(debug, file, url)
-    uploadString(debug, md5(file), url + '.md5')
-    uploadString(debug, sha1(file), url + '.sha1')
+    uploadFile(config, file, repositoryId, url)
+    uploadString(config, md5(file), repositoryId, url + '.md5')
+    uploadString(config, sha1(file), repositoryId, url + '.sha1')
 
 
 ####################################################################################################
 # Make POM
 ####################################################################################################
 
-def makePom(groupId, artifactId, version, packaging):
+def makePom(config, groupId, artifactId, aol, version, packaging):
+
+    reposArtifactId = artifactId.replace('-', '/')
+    reposArtifactId = reposArtifactId.replace('.', '-')
+
     lines = []
     lines.append('<?xml version="1.0" encoding="UTF-8"?>\n')
     lines.append('<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"\n')
     lines.append('    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n')
     lines.append('  <modelVersion>4.0.0</modelVersion>\n')
-    lines.append('  <groupId>' + groupId + '</groupId>\n')
-    lines.append('  <artifactId>' + artifactId + '</artifactId>\n')
+    lines.append('  <groupId>' + groupId + '.' + reposArtifactId + '</groupId>\n')
+    lines.append('  <artifactId>' + artifactId + '-' + aol + '</artifactId>\n')
     lines.append('  <version>' + version + '</version>\n')
     lines.append('  <packaging>' + packaging + '</packaging>\n')
     lines.append('</project>\n')
@@ -380,6 +536,7 @@ def makePom(groupId, artifactId, version, packaging):
     buffer = BytesIO()
     for line in lines:
         buffer.write(line.encode('utf-8'))
+
     return buffer
 
 
@@ -387,44 +544,280 @@ def makePom(groupId, artifactId, version, packaging):
 # Upload a file and its md5 and its sha1 to Nexus
 ####################################################################################################
 
-def uploadArtifact(debug, base, groupId, artifactId, version, packaging, localfile):
+def uploadArtifact(config, groupId, artifactId, aol, version, packaging, filename):
 
-    if debug:
-        print('uploadArtifact')
-        print('    base =', base)
+    if debug(config):
+        print('uploadArtifact:')
         print('    groupId =', groupId)
         print('    artifactId =', artifactId)
+        print('    aol =', aol)
         print('    version =', version)
         print('    packaging =', packaging)
+        print('    filename =', filename)
 
     snap = version.endswith('SNAPSHOT')
 
     if snap:
-        repository = 'snapshots'
-        timestamp = '{:%Y%m%d.%H%M%S}'.format(datetime.datetime.now())
-        repositoryPath = '/service/local/repositories/' + repository + '/content/'
-        buildNumber = getBuildNumberFromMetadata(debug, base, repositoryPath, groupId, artifactId, version)
-        fileName = artifactId + '-' + version.replace('SNAPSHOT', timestamp) + '-' + buildNumber
-    else:
-        repository = 'releases'
-        repositoryPath = '/service/local/repositories/' + repository + '/content/'
-        fileName = artifactId
+        info = getSnapshotInfoFromDistributionMetadata(config, groupId, artifactId, aol, version)
+        if info == None:
+            buildNumber = 1
+        else:
+            buildNumber = info.get('buildNumber') + 1
 
-    filePath = repositoryPath + groupId.replace('.', '/') + '/' + artifactId + '/' + version
+        if debug(config):
+            print('uploadArtifact(1):')
+            print('    buildNumber = ' + str(buildNumber))
+
+        timestamp = '{:%Y%m%d.%H%M%S}'.format(datetime.datetime.now())
+        fileName = artifactId + '-' + aol + '-' + version.replace('SNAPSHOT', timestamp) + '-' + str(buildNumber)
+    else:
+        fileName = artifactId + '-' + aol + '-' + version
+
+    reposArtifactId = artifactId.replace('-', '/')
+    reposArtifactId = reposArtifactId.replace('.', '-')
+    filePath = groupId.replace('.', '/') + '/' + reposArtifactId + '/' + artifactId + '-' + aol
+    filePathVersion = filePath + '/' + version
+
+    if debug(config):
+        print('uploadArtifact(2):')
+        print('    filePath = ' + filePath)
+        print('    filePathVersion = ' + filePathVersion)
+        print('    fileName = ' + fileName)
 
     # Upload base file
-    file = open(localfile, 'rb')
-    uploadFileAndHashes(debug, file, base, filePath, fileName, packaging)
+    file = open(filename, 'rb')
+    uploadFileAndHashes(config, file, filePathVersion, fileName, packaging)
     file.close()
 
     # Upload the pom file
-    file = makePom(groupId, artifactId, version, packaging)
-    uploadFileAndHashes(debug, file, base, filePath, fileName, 'pom')
+    file = makePom(config, groupId, artifactId, aol, version, packaging)
+
+    if debug(config):
+        file.seek(0, os.SEEK_SET)
+        print('uploadArtifact(2): ')
+        print(file.read().decode('utf-8'))
+
+    uploadFileAndHashes(config, file, filePathVersion, fileName, 'pom')
     file.close()
 
     # Send request to Nexus to rebuild metadata
-    servicesPath = '/service/local/metadata/repositories/' + repository + '/content/' + groupId.replace('.', '/') + '/' + artifactId
-    rebuildMetadata(debug, base, servicesPath)
+    rebuildMetadata(config, filePath)
+
+
+####################################################################################################
+# Download a file
+####################################################################################################
+
+def downloadFile(config, url, file):
+
+    # Remove any old version of the file
+    if os.path.exists(file):
+        os.remove(file)
+
+    # Download the file
+    r = requests.get(url, stream=True)
+
+    rc = 0
+    if r.status_code == 200: # http.HTTPStatus.OK.value
+        if debug(config):
+            print('downloadFile:')
+            print('    File ' + file + ' was found in Nexus')
+
+        directory = os.path.dirname(file)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        f = open(file, 'wb')
+        for chunk in r.iter_content(chunk_size=512 * 1024):
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+        f.close()
+
+    elif r.status_code == 404: # http.HTTPStatus.NOT_FOUND.value
+        rc = 1
+        print('    File not found in Nexus')
+
+
+    else:
+        rc = 2
+        print('Unexpected Http response ' + str(r.status_code) + ' when getting: maven-metadata.xml')
+        print('    metadataUrl: ' + metadataUrl)
+        content = r.raw.decode('utf-8')
+        print('Content =', content)
+        sys.exit(99)
+
+    return rc
+
+
+####################################################################################################
+# Download a file and its hashes
+####################################################################################################
+
+def downloadFileAndHashes(config, url, localfile):
+
+    if debug(config):
+        print('downloadFileAndHashes:')
+        print('    url =', url)
+        print('    localfile =', localfile)
+
+    rc = 0
+    if (rc == 0): rc = downloadFile(config, url, localfile)
+    if (rc == 0): rc = downloadFile(config, url + '.sha1', localfile + '.sha1')
+
+    return rc
+
+
+####################################################################################################
+# Copy the long snapshot artifact to the short snapshot artifact
+####################################################################################################
+
+def copySnapshot(config, localpath, fileNameExpanded, fileName):
+    longName = localpath + '/' + fileNameExpanded
+    shortName = localpath + '/' + fileName
+    shutil.copy2(longName, shortName)
+
+####################################################################################################
+# Write the "lastUpdated.json" file to the local directory
+####################################################################################################
+
+def writeLastUpdatedFile(config, directory):
+
+    if debug(config):
+        print('writeLastUpdatedFile:')
+        print('    directory = ' + directory)
+
+    timestamp = '{:%Y%m%d.%H%M%S}'.format(datetime.datetime.now())
+    data = {'lastChecked': timestamp}
+
+    filepath = os.path.abspath(directory + '/' + 'lastUpdated.json')
+
+    with open(filepath, 'w') as outfile:
+        json.dump(data, outfile, indent=4, sort_keys=True, separators=(',', ':'))
+
+####################################################################################################
+# Download an artifact
+####################################################################################################
+
+def downloadArtifact(config, groupId, artifactId, aol, version, packaging):
+
+    if debug(config):
+        print('downloadArtifact:')
+        print('    groupId = ' + groupId)
+        print('    artifactId = ' + artifactId)
+        print('    aol = ' + aol)
+        print('    version = ' + version)
+        print('    packaging = ' + packaging)
+
+    snap = version.endswith('SNAPSHOT')
+
+    repositoryArtifactId = artifactId.replace('-', '/')
+    repositoryArtifactId = repositoryArtifactId.replace('.', '-')
+    path = groupId.replace('.', '/') + '/' + repositoryArtifactId + '/' + artifactId + '-' + aol + '/' + version
+
+    home = expanduser('~')
+    localpath = os.path.abspath(home + '/.m2/repository/' + path)
+    fileName = artifactId + '-' + aol + '-' + version
+
+    if debug(config):
+        print('    fileName = ' + fileName)
+        print('    path = ' + path)
+        print('    localpath = ' + localpath)
+
+
+    searchRemoteRepositories = False
+    if snap:
+        searchRemoteRepositories = True
+
+    elif os.path.exists(localpath + '/' + fileName + '.' + packaging):
+        searchRemoteRepositories = False
+        if verbose(config):
+            print('Artifact already exists in local repository')
+    else:
+        searchRemoteRepositories = True
+        if verbose(config):
+            print('Artifact not found in local reposity')
+
+    # writeLastUpdatedFile(config, localpath)
+
+    if searchRemoteRepositories:
+        print('Looking for artifact in remote repositories')
+
+        for repository in config['repositories']:
+            repositoryUrl = multipleReplace(repository["url"], config["properties"])
+
+            if debug(config):
+                print('    repositoryUrl = ' + repositoryUrl)
+
+            if snap:
+                info = getSnapshotInfoFromRepositoryMetadata(config, repositoryUrl, groupId, artifactId, aol, version)
+                if info == None:
+                    if debug(config):
+                        print('    Snapshot not found in Repository')
+                    continue
+                fileNameExpanded = artifactId + '-' + aol + '-' + version.replace('SNAPSHOT', info.get('timestamp')) + '-' + str(info.get('buildNumber'))
+            else:
+                fileNameExpanded = artifactId + '-' + aol + '-' + version
+
+            localFilenameExpanded = os.path.abspath(localpath + '/' + fileNameExpanded)
+            localFilename = os.path.abspath(localpath + '/' + fileName)
+
+            url = repositoryUrl + '/' + path + '/' + fileNameExpanded
+
+            if debug(config):
+                print('downloadArtifact(1):')
+                print('    localFilenameExpanded = ' + localFilenameExpanded)
+                print('    url = ' + url)
+
+            rc = downloadFileAndHashes(config, url + '.' + packaging, localFilename + '.' + packaging)
+            if rc != 0:
+                if debug(config):
+                    print('    Artifact not found in Repository')
+                continue
+
+            downloadFileAndHashes(config, url + '.pom', localFilename + '.pom')
+
+            return
+
+        print('Artifact ' + fileName + ' not found in remote repositories')
+        sys.exit(99)
+
+
+####################################################################################################
+# Expand artifact
+####################################################################################################
+
+def expandArtifact(config, groupId, artifactId, aol, version, packaging, dependancyDirectory):
+
+    if debug(config):
+        print('expandArtifact:')
+        print('    groupId = ' + groupId)
+        print('    artifactId = ' + artifactId)
+        print('    aol = ' + aol)
+        print('    version = ' + version)
+        print('    packaging = ' + packaging)
+        print('    dependancyDirectory = ' + dependancyDirectory)
+
+    fileName = artifactId + '-' + aol + '-' + version + '.' + packaging
+
+    repositoryArtifactId = artifactId.replace('-', '/')
+    repositoryArtifactId = repositoryArtifactId.replace('.', '-')
+
+    home = expanduser('~')
+    path = groupId.replace('.', '/') + '/' + repositoryArtifactId + '/' + artifactId + '-' + aol + '/' + version
+    localpath = os.path.abspath(home + '/.m2/repository/' + path + '/' + fileName)
+    directory = os.path.abspath(dependancyDirectory + '/' + artifactId.split('-')[0])
+
+    if debug(config):
+        print('expandArtifact:')
+        print('    localpath = ' + localpath)
+        print('    directory = ' + directory)
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    with zipfile.ZipFile(localpath, 'r') as z:
+        z.extractall(directory)
+
 
 
 ####################################################################################################
@@ -440,20 +833,65 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Build and deploy a project.')
 
     parser.add_argument('goals', type=str, nargs='*', help='A list of build goals [default: all]')
-    parser.add_argument("-f", "--file", help="Build file [default: build.json]", default='build.json')
-    parser.add_argument("-X", "--debug", help="Increase output verbosity", action="store_true", default=False)
-    parser.add_argument("-v", "--version", help="Set the release verson [default = 'version' field in build.json]")
+    parser.add_argument("--file", help="Build file [default: build.json]", default='build.json')
+
+    parser.add_argument('-D', dest='properties', action='append', help="Set a system property")
+    parser.set_defaults(properties=[])
+
+    parser.add_argument("-i", "--info", help="Set the trace level to 'info'", dest='traceLevel', action='store_const', const=INFO)
+    parser.add_argument("--verbose", help="Set the trace level to 'verbose'", dest='traceLevel', action='store_const', const=VERBOSE)
+    parser.add_argument("--debug", help="Set the trace level to 'debug'", dest='traceLevel', action='store_const', const=DEBUG)
+    parser.set_defaults(traceLevel=NONE)
 
     args = parser.parse_args()
+    config = {}
+    config['level'] = args.traceLevel
 
     if len(args.goals) == 0:
         goals = ['clean', 'generate', 'configure', 'make', 'dist', 'deploy']
     else:
         goals = args.goals
 
-    if args.debug:
+    if verbose(config):
         print('Given goals:  ', args.goals)
         print('Actual goals: ', goals)
+
+    if debug(config):
+        print('Number of command-line properties = ' + str(len(args.properties)))
+        for property in args.properties:
+            print('    ' + property)
+
+    ####################################################################################################
+    # Read Configuration files
+    ####################################################################################################
+
+    with open(args.file) as buildfile:
+        config.update(json.load(buildfile))
+
+    servers = getServersConfigurationFromSettingsFile(config)
+    config['servers'] = servers
+
+    properties = config['properties']
+    if debug(config):
+        print('Number of config properties = ' + str(len(properties)))
+        for key in properties:
+            print('    ' + key + ' = ' + properties[key])
+
+    for property in args.properties:
+        words = property.split('=')
+        if len(words) >= 1:
+            key = words[0].strip();
+            value = None
+        if len(words) >= 2:
+            key = words[0].strip();
+            value = words[1].strip();
+
+        properties[key] = value
+
+    if debug(config):
+        print('Number of config properties = ' + str(len(properties)))
+        for key in properties:
+            print('    ' + key + ' = ' + properties[key])
 
 
     ####################################################################################################
@@ -521,7 +959,7 @@ def main(argv):
         operatingSystem = string[1]
         linker = string[2]
 
-    if args.debug:
+    if verbose(config):
         print('architecture    =', architecture)
         print('operatingSystem =', operatingSystem)
         print('linker          =', linker)
@@ -537,9 +975,6 @@ def main(argv):
     # Init
     ####################################################################################################
 
-    with open(args.file) as buildfile:
-        bob = json.load(buildfile)
-
     src = os.path.abspath('./src')
     build = os.path.abspath('./build')
     source = os.path.abspath(build + '/source')
@@ -547,23 +982,7 @@ def main(argv):
     temp = os.path.abspath(build + '/temp')
     output = os.path.abspath(build + '/output')
     dist = os.path.abspath(build + '/dist')
-
-    GROUPID = bob["groupId"]
-    ARTIFACTID = bob["artifactId"] + '-' + aol
-    PACKAGING = 'zip'
-    REPOSITORYID = 'MaxwellHouse'
-    HOST = 'www.rsmaxwell.co.uk'
-    BASE = bob["distributionManagement"]["repository"]["url"]
-
-    if args.version == None:
-        VERSION = bob["version"]
-    else:
-        VERSION = args.version
-
-    if args.debug:
-        print('VERSION = ' + VERSION)
-
-    localfile = os.path.abspath(build + '/dist/' + ARTIFACTID)
+    dependances = os.path.abspath(build + '/dependances')
 
     ####################################################################################################
     # Clean
@@ -587,10 +1006,10 @@ def main(argv):
         srctargz = os.path.abspath(src + '/archive/' + 'jansson-2.9.tar.gz')
 
         if os.path.exists(srctargz):
-            if args.debug:
+            if verbose(config):
                 print('Archive file already exists: ' + srctargz)
         else:
-            if args.debug:
+            if debug(config):
                 print('Downloading ' + srctargz)
 
             if not os.path.exists(src + '/archive/'):
@@ -666,13 +1085,12 @@ def main(argv):
             environ['BUILD_TYPE'] = 'normal'
             environ['SOURCE'] = sourcesrc
             environ['OUTPUT'] = output
-            runProgram(args.debug, output, environ, ['make', '-f', src + '/make/' + aol + '.makefile', 'all'])
-
+            runProgram(config, output, environ, ['make', '-f', src + '/make/' + aol + '.makefile', 'all'])
 
         else:     # Linux or MinGW or CygWin
-            runProgram(args.debug, source, os.environ, ['make', 'clean'])
-            runProgram(args.debug, source, os.environ, ['make'])
-            runProgram(args.debug, source, os.environ, ['make', 'install'])
+            runProgram(config, source, os.environ, ['make', 'clean'])
+            runProgram(config, source, os.environ, ['make'])
+            runProgram(config, source, os.environ, ['make', 'install'])
 
 
     ####################################################################################################
@@ -692,6 +1110,7 @@ def main(argv):
                 os.makedirs(location)
 
             shutil.copy2(sourcesrc + '/jansson.h', dist + '/headers/jansson.h')
+            shutil.copy2(sourcesrc + '/jansson_config.h', dist + '/headers/jansson_config.h')
 
             location = os.path.join(dist + '/libs/shared')
             if not os.path.exists(location):
@@ -706,16 +1125,41 @@ def main(argv):
 
             shutil.copy2(output + '/static/jansson.lib', dist + '/libs/static/jansson.lib' )
 
-#        else:     # Linux or MinGW or CygWin
+#       else:     # Linux or MinGW or CygWin
 
-        shutil.make_archive(localfile, PACKAGING, build + '/dist')
+        artifactDir = os.path.abspath(build + '/artifact')
+        if not os.path.exists(artifactDir):
+            os.makedirs(artifactDir)
+
+        artifactId = config["artifactId"]
+        localfile = os.path.abspath(artifactDir + '/' + artifactId + '-' + aol)
+        packaging = 'zip'
+        shutil.make_archive(localfile, packaging, build + '/dist')
+
 
     ####################################################################################################
     # Deploy to nexus
     ####################################################################################################
 
     if 'deploy' in goals:
-        uploadArtifact(args.debug, BASE, GROUPID, ARTIFACTID, VERSION, PACKAGING, localfile + '.' + PACKAGING)
+
+        groupId = config["groupId"]
+        artifactId = config["artifactId"]
+        version = multipleReplace(config["version"], config["properties"])
+        packaging = 'zip'
+
+        artifactDir = os.path.abspath(build + '/artifact')
+        filename = os.path.abspath(artifactDir + '/' + artifactId + '-' + aol + '.' + packaging)
+
+        print('main: deploy')
+        print('    groupId = ' + groupId)
+        print('    artifactId = ' + artifactId)
+        print('    aol = ' + aol)
+        print('    version = ' + version)
+        print('    packaging = ' + packaging)
+        print('    filename = ' + filename)
+
+        uploadArtifact(config, groupId, artifactId, aol, version, packaging, filename)
 
 
     ####################################################################################################
