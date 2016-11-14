@@ -225,23 +225,19 @@ def parseSnapshotInfoFromMetadata(config, content):
 # Read the metadata and return the version
 ####################################################################################################
 
-def getSnapshotInfoFromDistributionMetadata(config, groupId, artifactId, aol, version):
+def getSnapshotInfoFromDistributionMetadata(config, mavenGroupId, mavenArtifactId, version):
 
     snapshotInfo = None
 
     if debug(config):
-        print('getSnapshotInfoFromDistributionMetadata:')
-        print('    groupId = ' + groupId)
-        print('    artifactId = ' + artifactId)
-        print('    aol = ' + aol)
+        print('getSnapshotInfoFromDistributionMetadata(1):')
+        print('    mavenGroupId = ' + mavenGroupId)
+        print('    mavenArtifactId = ' + mavenArtifactId)
         print('    version = ' + version)
-
-    reposArtifactId = artifactId.replace('-', '/')
-    reposArtifactId = reposArtifactId.replace('.', '-')
 
     deployment = config['distributionManagement']['repository']['deployment']
     repositoryUrl = multipleReplace(deployment['url'], config['properties'])
-    metadataUrl = repositoryUrl + '/' + groupId.replace('.', '/') + '/' + reposArtifactId + '/' + artifactId + '-' + aol + '/' + version + '/' + 'maven-metadata.xml'
+    metadataUrl = repositoryUrl + '/' + mavenGroupId.replace('.', '/') + '/' + mavenArtifactId  + '/' + version + '/' + 'maven-metadata.xml'
 
     if debug(config):
         print('    repositoryUrl = ' + repositoryUrl)
@@ -253,14 +249,14 @@ def getSnapshotInfoFromDistributionMetadata(config, groupId, artifactId, aol, ve
     # Use the metadata file to work out the build number
     if r.status_code == 200: # http.HTTPStatus.OK.value
         if debug(config):
-            print('getSnapshotInfoFromDistributionMetadata')
+            print('getSnapshotInfoFromDistributionMetadata(2)')
             print('    Artifact was found in Nexus')
 
         snapshotInfo = parseSnapshotInfoFromMetadata(config, r.text)
 
     elif r.status_code == 404: # http.HTTPStatus.NOT_FOUND.value
         if debug(config):
-            print('getSnapshotInfoFromDistributionMetadata')
+            print('getSnapshotInfoFromDistributionMetadata(3)')
             print('    Artifact not found in Nexus')
 
     else:
@@ -277,20 +273,18 @@ def getSnapshotInfoFromDistributionMetadata(config, groupId, artifactId, aol, ve
 # Read the metadata and return the version
 ####################################################################################################
 
-def getSnapshotInfoFromRepositoryMetadata(config, repositoryUrl, groupId, artifactId, aol, version):
+def getSnapshotInfoFromRepositoryMetadata(config, repositoryUrl, mavenGroupId, mavenArtifactId, version):
 
     snapshotInfo = None
 
     if debug(config):
         print('getSnapshotInfoFromRepositoryMetadata:')
         print('    repositoryUrl = ' + repositoryUrl)
-        print('    groupId = ' + groupId)
-        print('    artifactId = ' + artifactId)
+        print('    mavenGroupId = ' + mavenGroupId)
+        print('    mavenArtifactId = ' + mavenArtifactId)
         print('    version = ' + version)
 
-    reposArtifactId = artifactId.replace('-', '/')
-    reposArtifactId = reposArtifactId.replace('.', '-')
-    metadataUrl = repositoryUrl + '/' + groupId.replace('.', '/') + '/' + reposArtifactId + '/' + artifactId + '-' + aol + '/' + version + '/' + 'maven-metadata.xml'
+    metadataUrl = repositoryUrl + '/' + mavenGroupId.replace('.', '/') + '/' + mavenArtifactId + '/' + version + '/' + 'maven-metadata.xml'
 
     if debug(config):
         print('    metadataUrl = ' + metadataUrl)
@@ -517,18 +511,15 @@ def uploadFileAndHashes(config, file, filePath, fileName, packaging):
 # Make POM
 ####################################################################################################
 
-def makePom(config, groupId, artifactId, aol, version, packaging):
-
-    reposArtifactId = artifactId.replace('-', '/')
-    reposArtifactId = reposArtifactId.replace('.', '-')
+def makePom(config, mavenGroupId, mavenArtifactId, version, packaging):
 
     lines = []
     lines.append('<?xml version="1.0" encoding="UTF-8"?>\n')
     lines.append('<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"\n')
     lines.append('    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n')
     lines.append('  <modelVersion>4.0.0</modelVersion>\n')
-    lines.append('  <groupId>' + groupId + '.' + reposArtifactId + '</groupId>\n')
-    lines.append('  <artifactId>' + artifactId + '-' + aol + '</artifactId>\n')
+    lines.append('  <groupId>' + mavenGroupId  + '</groupId>\n')
+    lines.append('  <artifactId>' + mavenArtifactId + '</artifactId>\n')
     lines.append('  <version>' + version + '</version>\n')
     lines.append('  <packaging>' + packaging + '</packaging>\n')
     lines.append('</project>\n')
@@ -544,13 +535,12 @@ def makePom(config, groupId, artifactId, aol, version, packaging):
 # Upload a file and its md5 and its sha1 to Nexus
 ####################################################################################################
 
-def uploadArtifact(config, groupId, artifactId, aol, version, packaging, filename):
+def uploadArtifact(config, mavenGroupId, mavenArtifactId, version, packaging, filename):
 
     if debug(config):
         print('uploadArtifact:')
-        print('    groupId =', groupId)
-        print('    artifactId =', artifactId)
-        print('    aol =', aol)
+        print('    mavenGroupId =', mavenGroupId)
+        print('    mavenArtifactId =', mavenArtifactId)
         print('    version =', version)
         print('    packaging =', packaging)
         print('    filename =', filename)
@@ -558,7 +548,7 @@ def uploadArtifact(config, groupId, artifactId, aol, version, packaging, filenam
     snap = version.endswith('SNAPSHOT')
 
     if snap:
-        info = getSnapshotInfoFromDistributionMetadata(config, groupId, artifactId, aol, version)
+        info = getSnapshotInfoFromDistributionMetadata(config, mavenGroupId, mavenArtifactId, version)
         if info == None:
             buildNumber = 1
         else:
@@ -569,13 +559,11 @@ def uploadArtifact(config, groupId, artifactId, aol, version, packaging, filenam
             print('    buildNumber = ' + str(buildNumber))
 
         timestamp = '{:%Y%m%d.%H%M%S}'.format(datetime.datetime.now())
-        fileName = artifactId + '-' + aol + '-' + version.replace('SNAPSHOT', timestamp) + '-' + str(buildNumber)
+        fileName = mavenArtifactId  + '-' + version.replace('SNAPSHOT', timestamp) + '-' + str(buildNumber)
     else:
-        fileName = artifactId + '-' + aol + '-' + version
+        fileName = mavenArtifactId  + '-' + version
 
-    reposArtifactId = artifactId.replace('-', '/')
-    reposArtifactId = reposArtifactId.replace('.', '-')
-    filePath = groupId.replace('.', '/') + '/' + reposArtifactId + '/' + artifactId + '-' + aol
+    filePath = mavenGroupId.replace('.', '/') + '/' + mavenArtifactId
     filePathVersion = filePath + '/' + version
 
     if debug(config):
@@ -590,7 +578,7 @@ def uploadArtifact(config, groupId, artifactId, aol, version, packaging, filenam
     file.close()
 
     # Upload the pom file
-    file = makePom(config, groupId, artifactId, aol, version, packaging)
+    file = makePom(config, mavenGroupId, mavenArtifactId, version, packaging)
 
     if debug(config):
         file.seek(0, os.SEEK_SET)
@@ -676,6 +664,30 @@ def copySnapshot(config, localpath, fileNameExpanded, fileName):
     shortName = localpath + '/' + fileName
     shutil.copy2(longName, shortName)
 
+
+####################################################################################################
+# Read the "lastUpdated.json" file
+####################################################################################################
+
+def readLastUpdatedFile(config, directory):
+
+    if debug(config):
+        print('readLastUpdatedFile:')
+        print('    directory = ' + directory)
+
+    filepath = os.path.abspath(directory + '/' + 'lastUpdated.json')
+
+    data = {}
+    with open(filepath) as file:
+        data.update(json.load(file))
+
+    lastChecked = data.get('lastChecked')
+    now = '{:%Y%m%d.%H%M%S}'.format(datetime.datetime.now())
+
+    print('    now = ' + now)
+    print('    lastChecked = ' + lastChecked)
+
+
 ####################################################################################################
 # Write the "lastUpdated.json" file to the local directory
 ####################################################################################################
@@ -698,31 +710,29 @@ def writeLastUpdatedFile(config, directory):
 # Download an artifact
 ####################################################################################################
 
-def downloadArtifact(config, groupId, artifactId, aol, version, packaging):
+def downloadArtifact(config, mavenGroupId, mavenArtifactId,  version, packaging):
 
     if debug(config):
         print('downloadArtifact:')
-        print('    groupId = ' + groupId)
-        print('    artifactId = ' + artifactId)
-        print('    aol = ' + aol)
+        print('    mavenGroupId = ' + mavenGroupId)
+        print('    mavenArtifactId = ' + mavenArtifactId)
         print('    version = ' + version)
         print('    packaging = ' + packaging)
 
     snap = version.endswith('SNAPSHOT')
 
-    repositoryArtifactId = artifactId.replace('-', '/')
-    repositoryArtifactId = repositoryArtifactId.replace('.', '-')
-    path = groupId.replace('.', '/') + '/' + repositoryArtifactId + '/' + artifactId + '-' + aol + '/' + version
+    path = mavenGroupId.replace('.', '/') + '/' + mavenArtifactId + '/' + version
 
     home = expanduser('~')
     localpath = os.path.abspath(home + '/.m2/repository/' + path)
-    fileName = artifactId + '-' + aol + '-' + version
+    fileName = mavenArtifactId + '-' + version
 
     if debug(config):
         print('    fileName = ' + fileName)
         print('    path = ' + path)
         print('    localpath = ' + localpath)
 
+    lastUpdated = readLastUpdatedFile(config, localpath)
 
     searchRemoteRepositories = False
     if snap:
@@ -737,7 +747,7 @@ def downloadArtifact(config, groupId, artifactId, aol, version, packaging):
         if verbose(config):
             print('Artifact not found in local reposity')
 
-    # writeLastUpdatedFile(config, localpath)
+    writeLastUpdatedFile(config, localpath)
 
     if searchRemoteRepositories:
         print('Looking for artifact in remote repositories')
@@ -749,14 +759,14 @@ def downloadArtifact(config, groupId, artifactId, aol, version, packaging):
                 print('    repositoryUrl = ' + repositoryUrl)
 
             if snap:
-                info = getSnapshotInfoFromRepositoryMetadata(config, repositoryUrl, groupId, artifactId, aol, version)
+                info = getSnapshotInfoFromRepositoryMetadata(config, repositoryUrl, mavenGroupId, mavenArtifactId, version)
                 if info == None:
                     if debug(config):
                         print('    Snapshot not found in Repository')
                     continue
-                fileNameExpanded = artifactId + '-' + aol + '-' + version.replace('SNAPSHOT', info.get('timestamp')) + '-' + str(info.get('buildNumber'))
+                fileNameExpanded = mavenArtifactId + '-' + version.replace('SNAPSHOT', info.get('timestamp')) + '-' + str(info.get('buildNumber'))
             else:
-                fileNameExpanded = artifactId + '-' + aol + '-' + version
+                fileNameExpanded = mavenArtifactId + '-' + version
 
             localFilenameExpanded = os.path.abspath(localpath + '/' + fileNameExpanded)
             localFilename = os.path.abspath(localpath + '/' + fileName)
@@ -786,26 +796,22 @@ def downloadArtifact(config, groupId, artifactId, aol, version, packaging):
 # Expand artifact
 ####################################################################################################
 
-def expandArtifact(config, groupId, artifactId, aol, version, packaging, dependancyDirectory):
+def expandArtifact(config, mavenGroupId, mavenArtifactId, version, packaging, dependancyDirectory):
 
     if debug(config):
         print('expandArtifact:')
-        print('    groupId = ' + groupId)
-        print('    artifactId = ' + artifactId)
-        print('    aol = ' + aol)
+        print('    mavenGroupId = ' + mavenGroupId)
+        print('    mavenArtifactId = ' + mavenArtifactId)
         print('    version = ' + version)
         print('    packaging = ' + packaging)
         print('    dependancyDirectory = ' + dependancyDirectory)
 
-    fileName = artifactId + '-' + aol + '-' + version + '.' + packaging
-
-    repositoryArtifactId = artifactId.replace('-', '/')
-    repositoryArtifactId = repositoryArtifactId.replace('.', '-')
+    fileName = mavenArtifactId + '-' + version + '.' + packaging
 
     home = expanduser('~')
-    path = groupId.replace('.', '/') + '/' + repositoryArtifactId + '/' + artifactId + '-' + aol + '/' + version
+    path = mavenGroupId.replace('.', '/') + '/' + mavenArtifactId + '/' + version
     localpath = os.path.abspath(home + '/.m2/repository/' + path + '/' + fileName)
-    directory = os.path.abspath(dependancyDirectory + '/' + artifactId.split('-')[0])
+    directory = os.path.abspath(dependancyDirectory + '/' + mavenArtifactId.split('-')[0])
 
     if debug(config):
         print('expandArtifact:')
@@ -817,7 +823,6 @@ def expandArtifact(config, groupId, artifactId, aol, version, packaging, dependa
 
     with zipfile.ZipFile(localpath, 'r') as z:
         z.extractall(directory)
-
 
 
 ####################################################################################################
@@ -1148,18 +1153,27 @@ def main(argv):
         version = multipleReplace(config["version"], config["properties"])
         packaging = 'zip'
 
+        reposArtifactId = artifactId.replace('-', '/')
+        reposArtifactId = reposArtifactId.replace('.', '-')
+
+        mavenGroupId = groupId + '.' + reposArtifactId
+        mavenArtifactId = artifactId + '-' + aol
+
         artifactDir = os.path.abspath(build + '/artifact')
-        filename = os.path.abspath(artifactDir + '/' + artifactId + '-' + aol + '.' + packaging)
+        filename = os.path.abspath(artifactDir + '/' + mavenArtifactId + '.' + packaging)
 
-        print('main: deploy')
-        print('    groupId = ' + groupId)
-        print('    artifactId = ' + artifactId)
-        print('    aol = ' + aol)
-        print('    version = ' + version)
-        print('    packaging = ' + packaging)
-        print('    filename = ' + filename)
+        if debug(config):
+            print('main: deploy')
+            print('    groupId = ' + groupId)
+            print('    artifactId = ' + artifactId)
+            print('    mavenGroupId = ' + mavenGroupId)
+            print('    mavenArtifactId = ' + mavenArtifactId)
+            print('    aol = ' + aol)
+            print('    version = ' + version)
+            print('    packaging = ' + packaging)
+            print('    filename = ' + filename)
 
-        uploadArtifact(config, groupId, artifactId, aol, version, packaging, filename)
+        uploadArtifact(config, mavenGroupId, mavenArtifactId, version, packaging, filename)
 
 
     ####################################################################################################
