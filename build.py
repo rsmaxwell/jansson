@@ -63,7 +63,7 @@ def generate(config, src, source, temp, os, aol, packaging, dependances):
 # Configure
 ####################################################################################################
 
-def configure(config, output, dist, operatingSystem, sourcesrc):
+def configure(config, output, source, dist, operatingSystem, sourcesrc):
 
     location = os.path.join(output)
     if not os.path.exists(location):
@@ -90,7 +90,7 @@ def configure(config, output, dist, operatingSystem, sourcesrc):
         script = os.path.join(source, 'configure')
         os.chmod(script, 0o777)
 
-        buildsystem.runProgram(args.debug, source, os.environ, ['bash', script, '--prefix=' + location])
+        buildsystem.runProgram(config, source, os.environ, ['bash', script, '--prefix=' + location])
 
 
 ####################################################################################################
@@ -116,7 +116,7 @@ def make(config, src, source, sourcesrc, output, operatingSystem, aol):
 # Dist
 ####################################################################################################
 
-def distribution(config, build, aol, localfile, packaging):
+def distribution(config, build, operatingSystem, aol, packaging):
 
         if operatingSystem == 'Windows':
 
@@ -162,7 +162,7 @@ def deploy(config, build, aol, packaging):
 
     groupId = config["groupId"]
     artifactId = config["artifactId"]
-    version = multipleReplace(config["version"], config["properties"])
+    version = buildsystem.multipleReplace(config["version"], config["properties"])
     packaging = 'zip'
 
     reposArtifactId = artifactId.replace('-', '/')

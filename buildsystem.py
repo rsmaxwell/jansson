@@ -1015,7 +1015,7 @@ def main(argv, clean, generate, configure, make, distribution, deploy):
 
     if 'configure' in goals:
         print('goal = configure')
-        configure(config, output, dist, operatingSystem, sourcesrc)
+        configure(config, output, source, dist, operatingSystem, sourcesrc)
 
     if 'make' in goals:
         print('goal = make')
@@ -1023,7 +1023,7 @@ def main(argv, clean, generate, configure, make, distribution, deploy):
 
     if 'dist' in goals:
         print('goal = dist')
-        distribution(config, build, aol, localfile, packaging)
+        distribution(config, build, operatingSystem, aol, packaging)
 
     if 'deploy' in goals:
         print('goal = deploy')
