@@ -21,7 +21,7 @@ def clean(config, build):
 # Generate
 ####################################################################################################
 
-def generate(config, src, source, temp, os, aol, packaging, dependances):
+def generate(config, src, source, temp, os, operatingSystem, aol, packaging, dependances):
 
     if not os.path.exists(temp):
         os.makedirs(temp)
@@ -97,7 +97,7 @@ def configure(config, output, source, dist, operatingSystem, sourcesrc):
 # Make
 ####################################################################################################
 
-def make(config, src, source, sourcesrc, output, operatingSystem, aol):
+def make(config, src, source, sourcesrc, output, build, os, operatingSystem, aol):
 
     if operatingSystem == 'Windows':
         environ = os.environ
@@ -116,7 +116,7 @@ def make(config, src, source, sourcesrc, output, operatingSystem, aol):
 # Dist
 ####################################################################################################
 
-def distribution(config, build, operatingSystem, aol, packaging):
+def distribution(config, build, os, operatingSystem, aol, packaging):
 
         if operatingSystem == 'Windows':
 
@@ -158,7 +158,7 @@ def distribution(config, build, operatingSystem, aol, packaging):
 # Deploy
 ####################################################################################################
 
-def deploy(config, build, aol, packaging):
+def deploy(config, build, os, aol, packaging):
 
     groupId = config["groupId"]
     artifactId = config["artifactId"]
