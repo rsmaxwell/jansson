@@ -116,7 +116,7 @@ def make(config, src, source, sourcesrc, output, build, os, operatingSystem, aol
 # Dist
 ####################################################################################################
 
-def distribution(config, build, os, operatingSystem, aol, packaging):
+def distribution(config, build, dist, os, operatingSystem, aol, packaging):
 
         if operatingSystem == 'Windows':
 
