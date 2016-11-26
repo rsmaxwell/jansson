@@ -99,6 +99,9 @@ def configure(config, output, source, dist, operatingSystem, sourcesrc):
 
 def make(config, src, source, sourcesrc, output, build, os, operatingSystem, aol):
 
+    if not os.path.exists(output):
+        os.makedirs(output)
+
     if operatingSystem == 'Windows':
         environ = os.environ
         environ['BUILD_TYPE'] = 'normal'
@@ -116,7 +119,7 @@ def make(config, src, source, sourcesrc, output, build, os, operatingSystem, aol
 # Dist
 ####################################################################################################
 
-def distribution(config, build, dist, os, operatingSystem, aol, packaging):
+def distribution(config, sourcesrc, build, output, dist, os, operatingSystem, aol, packaging):
 
         if operatingSystem == 'Windows':
 
