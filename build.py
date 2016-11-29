@@ -77,7 +77,7 @@ def configure(config, output, source, dist, operatingSystem, sourcesrc):
     if operatingSystem == 'Windows':
 
         with open(sourcesrc + '/jansson_private_config.h', 'w') as text_file:
-            print('#include <stdint.h>', file=text_file)
+            print('#define HAVE_STDINT_H  1', file=text_file)
 
         filename = sourcesrc + '/jansson_config.h'
         shutil.copy2(sourcesrc + '/jansson_config.h.in', filename)
