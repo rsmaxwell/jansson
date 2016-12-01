@@ -97,7 +97,7 @@ def configure(config, output, source, build, dist, operatingSystem, sourcesrc):
 # Make
 ####################################################################################################
 
-def make(config, src, source, sourcesrc, output, build, os, operatingSystem, aol):
+def make(config, src, source, sourcesrc, output, build, os, operatingSystem, linker, aol):
 
     if not os.path.exists(output):
         os.makedirs(output)
