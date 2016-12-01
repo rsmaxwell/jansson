@@ -21,7 +21,7 @@ def clean(config, build):
 # Generate
 ####################################################################################################
 
-def generate(config, src, source, temp, os, operatingSystem, aol, packaging, dependances):
+def generate(config, src, source, temp, os, operatingSystem, linker, aol, packaging, dependances):
 
     if not os.path.exists(temp):
         os.makedirs(temp)
@@ -63,7 +63,7 @@ def generate(config, src, source, temp, os, operatingSystem, aol, packaging, dep
 # Configure
 ####################################################################################################
 
-def configure(config, output, source, build, dist, operatingSystem, sourcesrc):
+def configure(config, output, source, build, dist, operatingSystem, linker, sourcesrc):
 
     location = os.path.join(output)
     if not os.path.exists(location):
