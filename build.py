@@ -13,20 +13,20 @@ from os.path import expanduser
 # Clean
 ####################################################################################################
 
-def clean(config, dirs, aol, packaging):
-    shutil.rmtree(dirs.build, ignore_errors=True)
+def clean(config, location, aol, packaging):
+    shutil.rmtree(location.build, ignore_errors=True)
 
 
 ####################################################################################################
 # Generate
 ####################################################################################################
 
-def generate(config, dirs, aol, packaging):
+def generate(config, location, aol, packaging):
 
-    if not os.path.exists(dirs.temp):
-        os.makedirs(dirs.temp)
+    if not os.path.exists(location.temp):
+        os.makedirs(location.temp)
 
-    srctargz = os.path.abspath(dirs.src + '/archive/' + 'jansson-2.9.tar.gz')
+    srctargz = os.path.abspath(location.src + '/archive/' + 'jansson-2.9.tar.gz')
 
     if os.path.exists(srctargz):
         if buildsystem.verbose(config):
@@ -35,133 +35,130 @@ def generate(config, dirs, aol, packaging):
         if buildsystem.debug(config):
             print('Downloading ' + srctargz)
 
-        if not os.path.exists(dirs.src + '/archive/'):
-            os.makedirs(dirs.src + '/archive/')
+        if not os.path.exists(location.src + '/archive/'):
+            os.makedirs(location.src + '/archive/')
 
         url = 'http://www.digip.org/jansson/releases/jansson-2.9.tar.gz'
         urllib.request.urlretrieve(url, srctargz)
 
-    temptargz = os.path.abspath(dirs.temp + '/' + 'jansson-2.9.tar.gz')
+    temptargz = os.path.abspath(location.temp + '/' + 'jansson-2.9.tar.gz')
     shutil.copy2(srctargz, temptargz)
 
-    inF = gzip.GzipFile(dirs.temp + '/jansson-2.9.tar.gz', 'rb')
+    inF = gzip.GzipFile(location.temp + '/jansson-2.9.tar.gz', 'rb')
     s = inF.read()
     inF.close()
 
-    outF = open(dirs.temp + '/jansson-2.9.tar', 'wb')
+    outF = open(location.temp + '/jansson-2.9.tar', 'wb')
     outF.write(s)
     outF.close()
 
-    tar = tarfile.open(dirs.temp + '/jansson-2.9.tar')
-    tar.extractall(dirs.temp)
+    tar = tarfile.open(location.temp + '/jansson-2.9.tar')
+    tar.extractall(location.temp)
     tar.close()
 
-    shutil.copytree(dirs.temp + '/jansson-2.9', dirs.source)
+    shutil.copytree(location.temp + '/jansson-2.9', location.source)
 
 
 ####################################################################################################
 # Configure
 ####################################################################################################
 
-def configure(config, dirs, aol, packaging):
+def configure(config, location, aol, packaging):
 
-    location = os.path.join(dirs.output)
-    if not os.path.exists(location):
-        os.makedirs(location)
+    if not os.path.exists(location.output):
+        os.makedirs(location.output)
 
-
-    location = dirs.dist
-    if not os.path.exists(location):
-        os.makedirs(location)
+    if not os.path.exists(location.dist):
+        os.makedirs(location.dist)
 
     if aol.operatingSystem == 'Windows':
 
-        with open(dirs.sourcesrc + '/jansson_private_config.h', 'w') as text_file:
+        with open(location.sourcesrc + '/jansson_private_config.h', 'w') as text_file:
             print('#define HAVE_STDINT_H  1', file=text_file)
 
-        filename = dirs.sourcesrc + '/jansson_config.h'
-        shutil.copy2(dirs.sourcesrc + '/jansson_config.h.in', filename)
+        filename = location.sourcesrc + '/jansson_config.h'
+        shutil.copy2(location.sourcesrc + '/jansson_config.h.in', filename)
         buildsystem.inplace_change(filename, '@json_inline@', '__inline')
         buildsystem.inplace_change(filename, '@json_have_long_long@', '1')
         buildsystem.inplace_change(filename, '@json_have_localeconv@', '1')
 
     else:     # Linux or MinGW or CygWin
 
-        script = os.path.join(dirs.source, 'configure')
+        script = os.path.join(location.source, 'configure')
         os.chmod(script, 0o777)
 
-        buildsystem.runProgram(config, dirs.source, os.environ, ['bash', script, '--prefix=' + location])
+        buildsystem.runProgram(config, location.source, os.environ, ['bash', script, '--prefix=' + location.dist])
 
 
 ####################################################################################################
 # Make
 ####################################################################################################
 
-def make(config, dirs, aol, packaging):
+def make(config, location, aol, packaging):
 
-    if not os.path.exists(dirs.output):
-        os.makedirs(dirs.output)
+    if not os.path.exists(location.output):
+        os.makedirs(location.output)
 
     if aol.operatingSystem == 'Windows':
         environ = os.environ
         environ['BUILD_TYPE'] = 'normal'
-        environ['SOURCE'] = dirs.sourcesrc
-        environ['OUTPUT'] = dirs.output
-        buildsystem.runProgram(config, dirs.output, environ, ['make', '-f', src + '/make/' + aol.name + '.makefile', 'all'])
+        environ['SOURCE'] = location.sourcesrc
+        environ['OUTPUT'] = location.output
+        buildsystem.runProgram(config, location.output, environ, ['make', '-f', location.src + '/make/' + str(aol) + '.makefile', 'all'])
 
     else:     # Linux or MinGW or CygWin
-        buildsystem.runProgram(config, dirs.source, os.environ, ['make', 'clean'])
-        buildsystem.runProgram(config, dirs.source, os.environ, ['make'])
-        buildsystem.runProgram(config, dirs.source, os.environ, ['make', 'install'])
+        buildsystem.runProgram(config, location.source, os.environ, ['make', 'clean'])
+        buildsystem.runProgram(config, location.source, os.environ, ['make'])
+        buildsystem.runProgram(config, location.source, os.environ, ['make', 'install'])
 
 
 ####################################################################################################
 # Dist
 ####################################################################################################
 
-def distribution(config, dirs, aol, packaging):
+def distribution(config, location, aol, packaging):
 
         if aol.operatingSystem == 'Windows':
 
-            shutil.rmtree(dirs.build + '/dist', ignore_errors=True)
+            shutil.rmtree(location.build + '/dist', ignore_errors=True)
 
-            location = os.path.join(dirs.dist + '/headers')
-            if not os.path.exists(location):
-                os.makedirs(location)
+            headers = os.path.join(location.dist + '/headers')
+            if not os.path.exists(headers):
+                os.makedirs(headers)
 
-            shutil.copy2(dirs.sourcesrc + '/jansson.h', dirs.dist + '/headers/jansson.h')
-            shutil.copy2(dirs.sourcesrc + '/jansson_config.h', dirs.dist + '/headers/jansson_config.h')
+            shutil.copy2(location.sourcesrc + '/jansson.h', location.dist + '/headers/jansson.h')
+            shutil.copy2(location.sourcesrc + '/jansson_config.h', location.dist + '/headers/jansson_config.h')
 
-            location = os.path.join(dirs.dist + '/libs/shared')
-            if not os.path.exists(location):
-                os.makedirs(location)
+            shared = os.path.join(location.dist + '/libs/shared')
+            if not os.path.exists(shared):
+                os.makedirs(shared)
 
-            shutil.copy2(dirs.output + '/shared/jansson.lib', dirs.dist + '/libs/shared/jansson.lib' )
-            shutil.copy2(dirs.output + '/shared/jansson.dll', dirs.dist + '/libs/shared/jansson.dll' )
+            shutil.copy2(location.output + '/shared/jansson.lib', location.dist + '/libs/shared/jansson.lib' )
+            shutil.copy2(location.output + '/shared/jansson.dll', location.dist + '/libs/shared/jansson.dll' )
 
-            location = os.path.join(dirs.dist + '/libs/static')
-            if not os.path.exists(location):
-                os.makedirs(location)
+            static = os.path.join(location.dist + '/libs/static')
+            if not os.path.exists(static):
+                os.makedirs(static)
 
-            shutil.copy2(dirs.output + '/static/jansson.lib', dirs.dist + '/libs/static/jansson.lib' )
+            shutil.copy2(location.output + '/static/jansson.lib', location.dist + '/libs/static/jansson.lib' )
 
 #       else:     # Linux or MinGW or CygWin
 
-        artifactDir = os.path.abspath(dirs.build + '/artifact')
+        artifactDir = os.path.abspath(location.build + '/artifact')
         if not os.path.exists(artifactDir):
             os.makedirs(artifactDir)
 
         artifactId = config["artifactId"]
-        localfile = os.path.abspath(artifactDir + '/' + artifactId + '-' + aol)
+        localfile = os.path.abspath(artifactDir + '/' + artifactId + '-' + str(aol))
         packaging = 'zip'
-        shutil.make_archive(localfile, packaging, dirs.build + '/dist')
+        shutil.make_archive(localfile, packaging, location.build + '/dist')
 
 
 ####################################################################################################
 # Deploy
 ####################################################################################################
 
-def deploy(config, dirs, aol, packaging):
+def deploy(config, location, aol, packaging):
 
     groupId = config["groupId"]
     artifactId = config["artifactId"]
@@ -174,7 +171,7 @@ def deploy(config, dirs, aol, packaging):
     mavenGroupId = groupId + '.' + reposArtifactId
     mavenArtifactId = artifactId + '-' + aol
 
-    artifactDir = os.path.abspath(dirs.build + '/artifact')
+    artifactDir = os.path.abspath(location.build + '/artifact')
     filename = os.path.abspath(artifactDir + '/' + mavenArtifactId + '.' + packaging)
 
     if buildsystem.debug(config):
@@ -183,7 +180,7 @@ def deploy(config, dirs, aol, packaging):
         print('    artifactId = ' + artifactId)
         print('    mavenGroupId = ' + mavenGroupId)
         print('    mavenArtifactId = ' + mavenArtifactId)
-        print('    aol = ' + aol)
+        print('    aol = ' + str(aol))
         print('    version = ' + version)
         print('    packaging = ' + packaging)
         print('    filename = ' + filename)
