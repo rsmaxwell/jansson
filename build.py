@@ -73,8 +73,8 @@ def configure(config, location, aol, packaging):
 
     if aol.operatingSystem == 'Windows':
 
-        with open(location.sourcesrc + '/jansson_private_config.h', 'w') as text_file:
-            print('#define HAVE_STDINT_H  1', file=text_file)
+        with open(location.sourcesrc + '/jansson_private_config.h', 'w') as f:
+            f.write('#define HAVE_STDINT_H  1\n')
 
         filename = location.sourcesrc + '/jansson_config.h'
         shutil.copy2(location.sourcesrc + '/jansson_config.h.in', filename)
