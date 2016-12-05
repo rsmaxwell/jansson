@@ -73,13 +73,11 @@ def configure(config, location, aol, packaging):
     buildDir = location.build
     sourceDir = location.build + location.source
     sourceSrcDir = location.build + location.source + location.src
-    outputDir = location.build + location.output
     distDir = location.build + location.dist
 
-    buildsystem.mkdir_p(outputDir) 
     buildsystem.mkdir_p(distDir) 
 
-    if aol.operatingSystem == 'Windows':
+    if aol.operatingSystem == 'windows':
 
         with open(sourceSrcDir + 'jansson_private_config.h', 'w') as f:
             f.write('#define HAVE_STDINT_H  1\n')
@@ -91,7 +89,6 @@ def configure(config, location, aol, packaging):
         buildsystem.inplace_change(filename, '@json_have_localeconv@', '1')
 
     else:     # Linux or MinGW or CygWin
-
         configureScript = 'configure'
         os.chmod(sourceDir + configureScript, 0o777)
 
@@ -104,23 +101,22 @@ def configure(config, location, aol, packaging):
 
 def make(config, location, aol, packaging):
 
-    sourceDir = location.build + location.source
-    sourceSrcDir = location.build + location.source + location.src
+    outputDir = location.build + location.output
+    buildsystem.mkdir_p(outputDir) 
 
-    if aol.operatingSystem == 'Windows':
-        outputDir = location.build + location.output
-        buildsystem.mkdir_p(outputDir)
+    if aol.operatingSystem == 'windows':
+        makeDir = location.src + location.make
+        sourceSrcDir = location.build + location.source + location.src
+        makefile = os.path.relpath(makeDir, outputDir) + '\\' + str(aol) + '.makefile'
 
         environ = os.environ
         environ['BUILD_TYPE'] = 'normal'
-        environ['SOURCE'] = sourceSrcDir
-        environ['OUTPUT'] = outputDir
-        buildsystem.runProgram(config, outputDir, os.environ, ['make', '-f', sourceSrcDir + '/make/' + str(aol) + '.makefile', 'all'])
+        environ['SOURCE'] = os.path.relpath(sourceSrcDir, outputDir)
+        environ['OUTPUT'] = '.'
+        buildsystem.runProgram(config, outputDir, os.environ, ['make', '-f', makefile, 'clean', 'all'])
 
     else:     # Linux or MinGW or CygWin
-        buildsystem.runProgram(config, sourceDir, os.environ, ['make', 'clean'])
-        buildsystem.runProgram(config, sourceDir, os.environ, ['make'])
-        buildsystem.runProgram(config, sourceDir, os.environ, ['make', 'install'])
+        buildsystem.runProgram(config, sourceDir, os.environ, ['make', 'clean', 'all'])
 
 
 ####################################################################################################
@@ -150,7 +146,7 @@ def distribution(config, location, aol, packaging):
     headersDir = location.build + location.dist + 'headers/'
     buildsystem.mkdir_p(headersDir)
 
-    if aol.operatingSystem == 'Windows':
+    if aol.operatingSystem == 'windows':
         shutil.copy2(sourceSrcDir + 'jansson.h', headersDir + 'jansson.h')
         shutil.copy2(sourceSrcDir + 'jansson_config.h', headersDir + 'jansson_config.h')
 
