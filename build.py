@@ -24,14 +24,9 @@ def clean(config, location, aol, packaging):
 
 def generate(config, location, aol, packaging):
 
-    sourceDir = location.build + location.source
-    archiveDir = location.src + location.archive
-    tempDir = location.build + location.temp
+    buildsystem.mkdir_p(buildsystem.TEMP_DIR)
 
-    if not os.path.exists(tempDir):
-        os.makedirs(tempDir)
-
-    srctargz = archiveDir + 'jansson-2.9.tar.gz'
+    srctargz = buildsystem.ARCHIVE_DIR + 'jansson-2.9.tar.gz'
 
     if os.path.exists(srctargz):
         if buildsystem.verbose(config):
@@ -40,28 +35,28 @@ def generate(config, location, aol, packaging):
         if buildsystem.debug(config):
             print('Downloading ' + srctargz)
 
-        if not os.path.exists(archiveDir):
-            os.makedirs(archiveDir)
+        if not os.path.exists(buildsystem.ARCHIVE_DIR):
+            os.makedirs(buildsystem.ARCHIVE_DIR)
 
         url = 'http://www.digip.org/jansson/releases/jansson-2.9.tar.gz'
         urllib.request.urlretrieve(url, srctargz)
 
-    temptargz = tempDir + 'jansson-2.9.tar.gz'
+    temptargz = buildsystem.TEMP_DIR + 'jansson-2.9.tar.gz'
     shutil.copy2(srctargz, temptargz)
 
-    inF = gzip.GzipFile(tempDir + 'jansson-2.9.tar.gz', 'rb')
+    inF = gzip.GzipFile(buildsystem.TEMP_DIR + 'jansson-2.9.tar.gz', 'rb')
     s = inF.read()
     inF.close()
 
-    outF = open(tempDir + 'jansson-2.9.tar', 'wb')
+    outF = open(buildsystem.TEMP_DIR + 'jansson-2.9.tar', 'wb')
     outF.write(s)
     outF.close()
 
-    tar = tarfile.open(tempDir + 'jansson-2.9.tar')
-    tar.extractall(tempDir)
+    tar = tarfile.open(buildsystem.TEMP_DIR + 'jansson-2.9.tar')
+    tar.extractall(buildsystem.TEMP_DIR)
     tar.close()
 
-    shutil.copytree(tempDir + 'jansson-2.9', sourceDir)
+    shutil.copytree(buildsystem.TEMP_DIR + 'jansson-2.9', buildsystem.SOURCE_DIR)
 
 
 ####################################################################################################
@@ -70,29 +65,24 @@ def generate(config, location, aol, packaging):
 
 def configure(config, location, aol, packaging):
 
-    buildDir = location.build
-    sourceDir = location.build + location.source
-    sourceSrcDir = location.build + location.source + location.src
-    distDir = location.build + location.dist
-
-    buildsystem.mkdir_p(distDir) 
+    buildsystem.mkdir_p(buildsystem.DIST_DIR)
 
     if aol.operatingSystem == 'windows':
 
-        with open(sourceSrcDir + 'jansson_private_config.h', 'w') as f:
+        with open(buildsystem.SOURCESRC_DIR + 'jansson_private_config.h', 'w') as f:
             f.write('#define HAVE_STDINT_H  1\n')
 
-        filename = sourceSrcDir + 'jansson_config.h'
-        shutil.copy2(sourceSrcDir + 'jansson_config.h.in', filename)
+        filename = buildsystem.SOURCESRC_DIR + 'jansson_config.h'
+        shutil.copy2(buildsystem.SOURCESRC_DIR + 'jansson_config.h.in', filename)
         buildsystem.inplace_change(filename, '@json_inline@', '__inline')
         buildsystem.inplace_change(filename, '@json_have_long_long@', '1')
         buildsystem.inplace_change(filename, '@json_have_localeconv@', '1')
 
     else:     # Linux or MinGW or CygWin
         configureScript = 'configure'
-        os.chmod(sourceDir + configureScript, 0o777)
+        os.chmod(buildsystem.SOURCE_DIR + configureScript, 0o777)
 
-        buildsystem.runProgram(config, sourceDir, os.environ, ['bash', configureScript, '--prefix=/usr/local'])
+        buildsystem.runProgram(config, buildsystem.SOURCE_DIR, os.environ, ['bash', configureScript, '--prefix=/usr/local'])
 
 
 ####################################################################################################
@@ -101,22 +91,19 @@ def configure(config, location, aol, packaging):
 
 def make(config, location, aol, packaging):
 
-    outputDir = location.build + location.output
-    buildsystem.mkdir_p(outputDir) 
+    buildsystem.mkdir_p(buildsystem.OUTPUT_DIR)
 
     if aol.operatingSystem == 'windows':
-        makeDir = location.src + location.make
-        sourceSrcDir = location.build + location.source + location.src
-        makefile = os.path.relpath(makeDir, outputDir) + '\\' + str(aol) + '.makefile'
+        makefile = os.path.relpath(buildsystem.MAKE_DIR, buildsystem.OUTPUT_DIR) + '\\' + str(aol) + '.makefile'
 
         environ = os.environ
         environ['BUILD_TYPE'] = 'normal'
-        environ['SOURCE'] = os.path.relpath(sourceSrcDir, outputDir)
+        environ['SOURCE'] = os.path.relpath(buildsystem.SOURCESRC_DIR, buildsystem.OUTPUT_DIR)
         environ['OUTPUT'] = '.'
-        buildsystem.runProgram(config, outputDir, os.environ, ['make', '-f', makefile, 'clean', 'all'])
+        buildsystem.runProgram(config, buildsystem.OUTPUT_DIR, os.environ, ['make', '-f', makefile, 'clean', 'all'])
 
     else:     # Linux or MinGW or CygWin
-        buildsystem.runProgram(config, sourceDir, os.environ, ['make', 'clean', 'all'])
+        buildsystem.runProgram(config, buildsystem.SOURCE_DIR, os.environ, ['make', 'clean', 'all'])
 
 
 ####################################################################################################
@@ -125,59 +112,47 @@ def make(config, location, aol, packaging):
 
 def distribution(config, location, aol, packaging):
 
-    sourceDir = location.build + location.source
-    sourceSrcDir = location.build + location.source + location.sourcesrc
-    sourceSrcLibDir = location.build + location.source + location.sourcesrc + '.libs/'
-    artifactDir = location.build + location.artifact
-    buildsystem.mkdir_p(artifactDir)
-
-    outputDir = location.build + location.output
-    distDir = location.build + location.dist
-    distTempDir = location.build + location.distTemp
-    buildsystem.rmdir(distDir, distTempDir)
+    buildsystem.rmdir(buildsystem.DIST_DIR, buildsystem.DISTTEMP_DIR)
     os.makedirs(distDir)
 
-    sharedDir = location.build + location.dist + 'libs/shared/'
-    buildsystem.mkdir_p(sharedDir)
+    buildsystem.mkdir_p(buildsystem.DIST_HEADERS_DIR)
+    buildsystem.mkdir_p(buildsystem.DIST_LIBS_SHARED_DIR)
+    buildsystem.mkdir_p(buildsystem.DIST_LIBS_STATIC_DIR)
+    buildsystem.mkdir_p(buildsystem.ARTIFACT_DIR)
 
-    staticDir = location.build + location.dist + 'libs/static/'
-    buildsystem.mkdir_p(staticDir)
-
-    headersDir = location.build + location.dist + 'headers/'
-    buildsystem.mkdir_p(headersDir)
 
     if aol.operatingSystem == 'windows':
-        shutil.copy2(sourceSrcDir + 'jansson.h', headersDir + 'jansson.h')
-        shutil.copy2(sourceSrcDir + 'jansson_config.h', headersDir + 'jansson_config.h')
+        shutil.copy2(buildsystem.SOURCE_DIR + 'jansson.h', buildsystem.DIST_HEADERS_DIR + 'jansson.h')
+        shutil.copy2(buildsystem.SOURCESRC_DIR + 'jansson_config.h', buildsystem.DIST_HEADERS_DIR + 'jansson_config.h')
 
-        shutil.copy2(outputDir + 'shared/jansson.lib', sharedDir + 'jansson.lib' )
-        shutil.copy2(outputDir + 'shared/jansson.dll', sharedDir + 'jansson.dll' )
+        shutil.copy2(buildsystem.OUTPUT_DIR + 'shared/jansson.lib', buildsystem.DIST_LIBS_SHARED_DIR + 'jansson.lib' )
+        shutil.copy2(buildsystem.OUTPUT_DIR + 'shared/jansson.dll', buildsystem.DIST_LIBS_SHARED_DIR + 'jansson.dll' )
 
-        shutil.copy2(outputDir + 'static/jansson.lib', staticDir + 'jansson.lib' )
+        shutil.copy2(buildsystem.OUTPUT_DIR + 'static/jansson.lib', buildsystem.DIST_LIBS_STATIC_DIR + 'jansson.lib' )
 
     else:     # Linux or MinGW or CygWin
-        files = glob.iglob(sourceSrcLibDir + '*.a')
+        files = glob.iglob(buildsystem.SOURCESRCLIB_DIR + '*.a')
         for file in files:
             shutil.copy2(file, sharedDir + os.path.basename(file))
 
-        files = glob.iglob(sourceSrcLibDir + '*.exp')
+        files = glob.iglob(buildsystem.SOURCESRCLIB_DIR + '*.exp')
+        for file in files:
+            shutil.copy2(file, buildsystem.DIST_LIBS_SHARED_DIR + os.path.basename(file))
+
+        files = glob.iglob(buildsystem.SOURCESRCLIB_DIR + '*.dll')
         for file in files:
             shutil.copy2(file, sharedDir + os.path.basename(file))
 
-        files = glob.iglob(sourceSrcLibDir + '*.dll')
+        files = glob.iglob(buildsystem.SOURCESRCLIB_DIR + '*.la*')
         for file in files:
-            shutil.copy2(file, sharedDir + os.path.basename(file))
+            shutil.copy2(file, buildsystem.DIST_LIBS_STATIC_DIR + os.path.basename(file))
 
-        files = glob.iglob(sourceSrcLibDir + '*.la*')
-        for file in files:
-            shutil.copy2(file, staticDir + os.path.basename(file))
-
-        shutil.copy2(sourceSrcDir + 'jansson.h', headersDir + 'jansson.h')        
+        shutil.copy2(buildsystem.SOURCESRC_DIR + 'jansson.h', buildsystem.DIST_HEADERS_DIR + 'jansson.h')
 
 
 
     artifactId = config["artifactId"]
-    localfile = artifactDir + '/' + artifactId + '-' + str(aol)
+    localfile = buildsystem.ARTIFACT_DIR + '/' + artifactId + '-' + str(aol)
     shutil.make_archive(localfile, packaging, distDir)
 
 
@@ -186,8 +161,6 @@ def distribution(config, location, aol, packaging):
 ####################################################################################################
 
 def deploy(config, location, aol, packaging):
-
-    artifactDir = location.build + location.artifact
 
     groupId = config["groupId"]
     artifactId = config["artifactId"]
@@ -199,7 +172,7 @@ def deploy(config, location, aol, packaging):
     mavenGroupId = groupId + '.' + reposArtifactId
     mavenArtifactId = artifactId + '-' + str(aol)
 
-    filename = os.path.abspath(artifactDir + mavenArtifactId + '.' + packaging)
+    filename = os.path.abspath(buildsystem.ARTIFACT_DIR + mavenArtifactId + '.' + packaging)
 
     if buildsystem.debug(config):
         print('main: deploy')
