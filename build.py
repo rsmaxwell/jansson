@@ -14,15 +14,15 @@ from os.path import expanduser
 # Clean
 ####################################################################################################
 
-def clean(config, location, aol, packaging):
-    buildsystem.defaultClean(config, location, aol, packaging)
+def clean(config, aol):
+    buildsystem.defaultClean(config, aol)
 
 
 ####################################################################################################
 # Generate
 ####################################################################################################
 
-def generate(config, location, aol, packaging):
+def generate(config, aol):
 
     buildsystem.mkdir_p(buildsystem.TEMP_DIR)
 
@@ -63,7 +63,7 @@ def generate(config, location, aol, packaging):
 # Configure
 ####################################################################################################
 
-def configure(config, location, aol, packaging):
+def configure(config, aol):
 
     buildsystem.mkdir_p(buildsystem.DIST_DIR)
 
@@ -89,7 +89,7 @@ def configure(config, location, aol, packaging):
 # Make
 ####################################################################################################
 
-def make(config, location, aol, packaging):
+def make(config, aol):
 
     buildsystem.mkdir_p(buildsystem.OUTPUT_DIR)
 
@@ -110,10 +110,10 @@ def make(config, location, aol, packaging):
 # Dist
 ####################################################################################################
 
-def distribution(config, location, aol, packaging):
+def distribution(config, aol):
 
     buildsystem.rmdir(buildsystem.DIST_DIR, buildsystem.DISTTEMP_DIR)
-    os.makedirs(distDir)
+    buildsystem.mkdir_p(buildsystem.DIST_DIR)
 
     buildsystem.mkdir_p(buildsystem.DIST_HEADERS_DIR)
     buildsystem.mkdir_p(buildsystem.DIST_LIBS_SHARED_DIR)
@@ -122,7 +122,7 @@ def distribution(config, location, aol, packaging):
 
 
     if aol.operatingSystem == 'windows':
-        shutil.copy2(buildsystem.SOURCE_DIR + 'jansson.h', buildsystem.DIST_HEADERS_DIR + 'jansson.h')
+        shutil.copy2(buildsystem.SOURCESRC_DIR + 'jansson.h', buildsystem.DIST_HEADERS_DIR + 'jansson.h')
         shutil.copy2(buildsystem.SOURCESRC_DIR + 'jansson_config.h', buildsystem.DIST_HEADERS_DIR + 'jansson_config.h')
 
         shutil.copy2(buildsystem.OUTPUT_DIR + 'shared/jansson.lib', buildsystem.DIST_LIBS_SHARED_DIR + 'jansson.lib' )
@@ -153,14 +153,14 @@ def distribution(config, location, aol, packaging):
 
     artifactId = config["artifactId"]
     localfile = buildsystem.ARTIFACT_DIR + '/' + artifactId + '-' + str(aol)
-    shutil.make_archive(localfile, packaging, distDir)
+    shutil.make_archive(localfile, buildsystem.PACKAGING, buildsystem.DIST_DIR)
 
 
 ####################################################################################################
 # Deploy
 ####################################################################################################
 
-def deploy(config, location, aol, packaging):
+def deploy(config, aol):
 
     groupId = config["groupId"]
     artifactId = config["artifactId"]
@@ -172,7 +172,7 @@ def deploy(config, location, aol, packaging):
     mavenGroupId = groupId + '.' + reposArtifactId
     mavenArtifactId = artifactId + '-' + str(aol)
 
-    filename = os.path.abspath(buildsystem.ARTIFACT_DIR + mavenArtifactId + '.' + packaging)
+    filename = os.path.abspath(buildsystem.ARTIFACT_DIR + mavenArtifactId + '.' + buildsystem.PACKAGING)
 
     if buildsystem.debug(config):
         print('main: deploy')
@@ -182,10 +182,9 @@ def deploy(config, location, aol, packaging):
         print('    mavenArtifactId = ' + mavenArtifactId)
         print('    aol = ' + str(aol))
         print('    version = ' + version)
-        print('    packaging = ' + packaging)
         print('    filename = ' + filename)
 
-    buildsystem.uploadArtifact(config, mavenGroupId, mavenArtifactId, version, packaging, filename)
+    buildsystem.uploadArtifact(config, mavenGroupId, mavenArtifactId, version, filename)
 
 
 
