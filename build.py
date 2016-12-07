@@ -136,20 +136,20 @@ def distribution(config, aol):
     else:     # Linux or MinGW or CygWin
         SOURCE_SRC_LIB_DIR  = './build/source/src/.libs/'
 
-        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.a')
-        for file in files:
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.dll.a'):
             shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR + os.path.basename(file))
 
-        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.exp')
-        for file in files:
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.exp'):
             shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR + os.path.basename(file))
 
-        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.dll')
-        for file in files:
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.dll'):
             shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR + os.path.basename(file))
 
-        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.la*')
-        for file in files:
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.a'):
+            if not file.endswith(".dll.a"):
+                shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR + os.path.basename(file))
+
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.la*'):
             shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR + os.path.basename(file))
 
 
