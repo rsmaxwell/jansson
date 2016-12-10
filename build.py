@@ -77,6 +77,7 @@ def configure(config, aol):
 
         filename = SOURCE_SRC_DIR + 'jansson_config.h'
         shutil.copy2(SOURCE_SRC_DIR + 'jansson_config.h.in', filename)
+
         buildsystem.inplace_change(filename, '@json_inline@', '__inline')
         buildsystem.inplace_change(filename, '@json_have_long_long@', '1')
         buildsystem.inplace_change(filename, '@json_have_localeconv@', '1')
@@ -102,6 +103,7 @@ def make(config, aol):
         environ = os.environ
         environ['BUILD_TYPE'] = 'normal'
         environ['SOURCE'] = os.path.relpath(SOURCE_SRC_DIR, buildsystem.OUTPUT_DIR)
+
         environ['OUTPUT'] = '.'
         buildsystem.runProgram(config, buildsystem.OUTPUT_DIR, os.environ, ['make', '-f', makefile, 'clean', 'all'])
 
@@ -123,6 +125,9 @@ def distribution(config, aol):
     buildsystem.mkdir_p(buildsystem.DIST_LIB_STATIC_DIR)
     buildsystem.mkdir_p(buildsystem.ARTIFACT_DIR)
 
+    files = glob.iglob(buildsystem.SOURCE_SRC_DIR + '*.h')
+    for file in files:
+        shutil.copy2(file, buildsystem.DIST_INCLUDE_DIR + os.path.basename(file))
 
     if aol.operatingSystem == 'windows':
         shutil.copy2(SOURCE_SRC_DIR + 'jansson.h', buildsystem.DIST_INCLUDE_DIR + 'jansson.h')
@@ -152,6 +157,8 @@ def distribution(config, aol):
 
         shutil.copy2(SOURCE_SRC_DIR + 'jansson.h', buildsystem.DIST_INCLUDE_DIR + 'jansson.h')
 
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.la*'):
+            shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR + os.path.basename(file))
 
 
     artifactId = config["artifactId"]
