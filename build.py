@@ -100,12 +100,12 @@ def make(config, aol):
     if aol.operatingSystem == 'windows':
         makefile = os.path.relpath(buildsystem.MAKE_DIR, buildsystem.OUTPUT_DIR) + '\\' + str(aol) + '.makefile'
 
-        environ = os.environ
-        environ['BUILD_TYPE'] = 'normal'
-        environ['SOURCE'] = os.path.relpath(SOURCE_SRC_DIR, buildsystem.OUTPUT_DIR)
+        env = os.environ
+        env['BUILD_TYPE'] = 'normal'
+        env['SOURCE'] = os.path.relpath(SOURCE_SRC_DIR, buildsystem.OUTPUT_DIR)
 
-        environ['OUTPUT'] = '.'
-        buildsystem.runProgram(config, buildsystem.OUTPUT_DIR, os.environ, ['make', '-f', makefile, 'clean', 'all'])
+        env['OUTPUT'] = '.'
+        buildsystem.runProgram(config, buildsystem.OUTPUT_DIR, env, ['make', '-f', makefile, 'clean', 'all'])
 
     else:     # Linux or MinGW or CygWin
         buildsystem.runProgram(config, buildsystem.SOURCE_DIR, os.environ, ['make', 'clean', 'all'])
@@ -182,7 +182,7 @@ def deploy(config, aol):
     mavenGroupId = groupId + '.' + reposArtifactId
     mavenArtifactId = artifactId + '-' + str(aol)
 
-    filename = os.path.abspath(buildsystem.ARTIFACT_DIR + mavenArtifactId + '.' + buildsystem.PACKAGING)
+    filename = buildsystem.ARTIFACT_DIR + mavenArtifactId + '.' + buildsystem.PACKAGING
 
     if buildsystem.debug(config):
         print('main: deploy')
@@ -195,7 +195,6 @@ def deploy(config, aol):
         print('    filename = ' + filename)
 
     buildsystem.uploadArtifact(config, mavenGroupId, mavenArtifactId, version, filename)
-
 
 
 ####################################################################################################
