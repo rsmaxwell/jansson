@@ -125,7 +125,7 @@ def distribution(config, aol):
     buildsystem.mkdir_p(buildsystem.DIST_LIB_STATIC_DIR)
     buildsystem.mkdir_p(buildsystem.ARTIFACT_DIR)
 
-    files = glob.iglob(buildsystem.SOURCE_SRC_DIR + '*.h')
+    files = glob.iglob(SOURCE_SRC_DIR + '*.h')
     for file in files:
         shutil.copy2(file, buildsystem.DIST_INCLUDE_DIR + os.path.basename(file))
 
