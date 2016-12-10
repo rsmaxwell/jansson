@@ -10,8 +10,8 @@ import os
 from os.path import expanduser
 
 
-SOURCE_SRC_DIR   = './build/source/src/'
-SOURCESRCLIB_DIR = './build/source/src/lib/'
+SOURCE_SRC_DIR     = './build/source/src/'
+SOURCE_SRC_LIB_DIR = './build/source/src/lib/'
 
 ####################################################################################################
 # Clean
@@ -139,19 +139,19 @@ def distribution(config, aol):
         shutil.copy2(buildsystem.OUTPUT_DIR + 'static/jansson.lib', buildsystem.DIST_LIB_STATIC_DIR + 'jansson.lib' )
 
     else:     # Linux or MinGW or CygWin
-        files = glob.iglob(SOURCESRCLIB_DIR + '*.a')
+        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.a')
         for file in files:
             shutil.copy2(file, sharedDir + os.path.basename(file))
 
-        files = glob.iglob(SOURCESRCLIB_DIR + '*.exp')
+        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.exp')
         for file in files:
             shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR + os.path.basename(file))
 
-        files = glob.iglob(SOURCESRCLIB_DIR + '*.dll')
+        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.dll')
         for file in files:
             shutil.copy2(file, sharedDir + os.path.basename(file))
 
-        files = glob.iglob(SOURCESRCLIB_DIR + '*.la*')
+        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.la*')
         for file in files:
             shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR + os.path.basename(file))
 
