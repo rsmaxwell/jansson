@@ -13,13 +13,6 @@ from os.path import expanduser
 SOURCE_SRC_DIR     = './build/source/src/'
 SOURCE_SRC_LIB_DIR = './build/source/src/lib/'
 
-####################################################################################################
-# Clean
-####################################################################################################
-
-def clean(config, aol):
-    buildsystem.defaultClean(config, aol)
-
 
 ####################################################################################################
 # Generate
@@ -125,40 +118,30 @@ def distribution(config, aol):
     buildsystem.mkdir_p(buildsystem.DIST_LIB_STATIC_DIR)
     buildsystem.mkdir_p(buildsystem.ARTIFACT_DIR)
 
-    files = glob.iglob(SOURCE_SRC_DIR + '*.h')
-    for file in files:
-        shutil.copy2(file, buildsystem.DIST_INCLUDE_DIR + os.path.basename(file))
+    shutil.copy2(SOURCE_SRC_DIR + 'jansson.h', buildsystem.DIST_INCLUDE_DIR)
+    shutil.copy2(SOURCE_SRC_DIR + 'jansson_config.h', buildsystem.DIST_INCLUDE_DIR)
 
     if aol.operatingSystem == 'windows':
-        shutil.copy2(SOURCE_SRC_DIR + 'jansson.h', buildsystem.DIST_INCLUDE_DIR + 'jansson.h')
-        shutil.copy2(SOURCE_SRC_DIR + 'jansson_config.h', buildsystem.DIST_INCLUDE_DIR + 'jansson_config.h')
+        shutil.copy2(buildsystem.OUTPUT_DIR + 'shared/jansson.lib', buildsystem.DIST_LIB_SHARED_DIR)
+        shutil.copy2(buildsystem.OUTPUT_DIR + 'shared/jansson.dll', buildsystem.DIST_LIB_SHARED_DIR)
 
-        shutil.copy2(buildsystem.OUTPUT_DIR + 'shared/jansson.lib', buildsystem.DIST_LIB_SHARED_DIR + 'jansson.lib' )
-        shutil.copy2(buildsystem.OUTPUT_DIR + 'shared/jansson.dll', buildsystem.DIST_LIB_SHARED_DIR + 'jansson.dll' )
-
-        shutil.copy2(buildsystem.OUTPUT_DIR + 'static/jansson.lib', buildsystem.DIST_LIB_STATIC_DIR + 'jansson.lib' )
+        shutil.copy2(buildsystem.OUTPUT_DIR + 'static/jansson.lib', buildsystem.DIST_LIB_STATIC_DIR)
 
     else:     # Linux or MinGW or CygWin
-        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.a')
-        for file in files:
-            shutil.copy2(file, sharedDir + os.path.basename(file))
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.a'):
+            shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR)
 
-        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.exp')
-        for file in files:
-            shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR + os.path.basename(file))
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.exp'):
+            shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR)
 
-        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.dll')
-        for file in files:
-            shutil.copy2(file, sharedDir + os.path.basename(file))
-
-        files = glob.iglob(SOURCE_SRC_LIB_DIR + '*.la*')
-        for file in files:
-            shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR + os.path.basename(file))
-
-        shutil.copy2(SOURCE_SRC_DIR + 'jansson.h', buildsystem.DIST_INCLUDE_DIR + 'jansson.h')
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.dll'):
+            shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR)
 
         for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.la*'):
-            shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR + os.path.basename(file))
+            shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR)
+
+        for file in glob.iglob(SOURCE_SRC_LIB_DIR + '*.la*'):
+            shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR)
 
 
     artifactId = config["artifactId"]
@@ -167,39 +150,8 @@ def distribution(config, aol):
 
 
 ####################################################################################################
-# Deploy
-####################################################################################################
-
-def deploy(config, aol):
-
-    groupId = config["groupId"]
-    artifactId = config["artifactId"]
-    version = buildsystem.multipleReplace(config["version"], config["properties"])
-
-    reposArtifactId = artifactId.replace('-', '/')
-    reposArtifactId = reposArtifactId.replace('.', '-')
-
-    mavenGroupId = groupId + '.' + reposArtifactId
-    mavenArtifactId = artifactId + '-' + str(aol)
-
-    filename = buildsystem.ARTIFACT_DIR + mavenArtifactId + '.' + buildsystem.PACKAGING
-
-    if buildsystem.debug(config):
-        print('main: deploy')
-        print('    groupId = ' + groupId)
-        print('    artifactId = ' + artifactId)
-        print('    mavenGroupId = ' + mavenGroupId)
-        print('    mavenArtifactId = ' + mavenArtifactId)
-        print('    aol = ' + str(aol))
-        print('    version = ' + version)
-        print('    filename = ' + filename)
-
-    buildsystem.uploadArtifact(config, mavenGroupId, mavenArtifactId, version, filename)
-
-
-####################################################################################################
 # Call main routine
 ####################################################################################################
 
 if __name__ == "__main__":
-    buildsystem.main(sys.argv, clean, generate, configure, make, distribution, deploy)
+    buildsystem.main(sys.argv, None, generate, configure, make, distribution, None)
