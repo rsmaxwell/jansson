@@ -61,8 +61,6 @@ def generate(config, aol):
 
 def configure(config, aol):
 
-    buildsystem.mkdir_p(buildsystem.DIST_DIR)
-
     if aol.operatingSystem == 'windows':
 
         with open(SOURCE_SRC_DIR + 'jansson_private_config.h', 'w') as f:
@@ -96,7 +94,6 @@ def make(config, aol):
         env = os.environ
         env['BUILD_TYPE'] = 'normal'
         env['SOURCE'] = os.path.relpath(SOURCE_SRC_DIR, buildsystem.OUTPUT_DIR)
-
         env['OUTPUT'] = '.'
         buildsystem.runProgram(config, buildsystem.OUTPUT_DIR, env, ['make', '-f', makefile, 'clean', 'all'])
 
