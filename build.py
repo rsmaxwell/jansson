@@ -154,4 +154,4 @@ def distribution(config, aol):
 ####################################################################################################
 
 if __name__ == "__main__":
-    buildsystem.main(sys.argv, None, generate, configure, make, distribution, None)
+    buildsystem.main(generate=generate, configure=configure, make=make, distribution=distribution)    
