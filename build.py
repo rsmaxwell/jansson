@@ -83,6 +83,31 @@ def configure(config, aol):
 
 
 ####################################################################################################
+# Make
+####################################################################################################
+
+def compile(config, aol):
+    print('compile')
+
+    buildsystem.mkdir_p(buildsystem.BUILD_OUTPUT_MAIN_DIR)
+
+    if aol.operatingSystem == 'windows':
+        makefile = os.path.relpath(buildsystem.SRC_MAIN_MAKE_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR) + '\\' + str(aol) + '.makefile'
+        env = os.environ
+        env['BUILD_TYPE'] = 'normal'
+        env['SOURCE'] = os.path.relpath(BUILD_SOURCE_MAIN_SRC_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR)
+        env['OUTPUT'] = '.'
+        stdout, stderr, returncode = buildsystem.runProgram(config, buildsystem.BUILD_OUTPUT_MAIN_DIR, env, ['make', '-f', makefile, 'clean', 'all'])
+
+    else:     # Linux or MinGW or CygWin
+        stdout, stderr, returncode = buildsystem.runProgram(config, buildsystem.BUILD_SOURCE_MAIN_DIR, os.environ, ['make', 'clean', 'all'])
+
+    if (returncode != 0):
+        print("Failed: compile failed: " + str(returncode))
+        sys.exit(1)
+
+
+####################################################################################################
 # Dist
 ####################################################################################################
 
@@ -132,4 +157,4 @@ def distribution(config, aol):
 ####################################################################################################
 
 if __name__ == "__main__":
-    buildsystem.main(generate=generate, configure=configure, distribution=distribution)    
+    buildsystem.main(generate=generate, configure=configure, compile=compile, distribution=distribution)
