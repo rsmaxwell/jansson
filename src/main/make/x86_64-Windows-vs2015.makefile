@@ -19,32 +19,36 @@ ifeq ($(BUILD_TYPE),debug)
   DEFINES = $(DEFINES_BASE) $(DEFINES_DEBUG)
   CFLAGS = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
+  CRTLIB=libcmtd.lib libvcruntimed.lib libucrtd.lib
 else
   DEFINES = $(DEFINES_BASE)
   CFLAGS = $(CFLAGS_BASE) $(CFLAGS_NODEBUG)
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_NODEBUG)
+  CRTLIB=msvcrt.lib vcruntime.lib ucrt.lib
 endif
 
 INCLUDES = -I $(SOURCE) -I $(OUTPUT)
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h)
 
-LIBRARY_NAME = jansson
+NAME = jansson
 
-all : $(OUTPUT)\shared\$(LIBRARY_NAME).dll $(OUTPUT)\static\$(LIBRARY_NAME).lib
+all : $(OUTPUT)\shared\$(NAME).dll $(OUTPUT)\static\$(NAME).lib
 
-$(OUTPUT)\shared\$(LIBRARY_NAME).dll $(OUTPUT)\static\$(LIBRARY_NAME).lib: $(SOURCES) $(HEADERS)
+$(OUTPUT)\shared\$(NAME).dll $(OUTPUT)\static\$(NAME).lib: $(SOURCES) $(HEADERS)
 	-mkdir $(OUTPUT)\shared 2>nul
 	-mkdir $(OUTPUT)\static 2>nul
-	-del $(LIBRARY_NAME).link 2>nul
-	echo $(OUTPUT)\shared\$(LIBRARY_NAME).exp                                                           >> $(LIBRARY_NAME).link
-	echo "vcruntime.lib" "kernel32.lib" "user32.lib" "gdi32.lib" "winspool.lib" "comdlg32.lib"          >> $(LIBRARY_NAME).link
-	echo "advapi32.lib" "shell32.lib" "ole32.lib" "oleaut32.lib" "uuid.lib" "odbc32.lib" "odbccp32.lib" >> $(LIBRARY_NAME).link
+	-del $(NAME).link $(NAME).def 1>nul 2>nul
+	echo $(OUTPUT)\shared\$(NAME).exp                                              >> $(NAME).link
+	echo kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib  >> $(NAME).link
+	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
+	echo $(CRTLIB)                                                                 >> $(NAME).link
+	echo $(wildcard ../../dependencies/cunit/lib/static/*.lib)                     >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
-	lib -nologo -machine:x64 -out:$(OUTPUT)\shared\$(LIBRARY_NAME).lib -def:$(SOURCE)\$(LIBRARY_NAME).def
-	$(LD) $(LINKFLAGS) *.obj @$(LIBRARY_NAME).link -out:$(OUTPUT)\shared\$(LIBRARY_NAME).dll
-	lib -nologo -machine:x64 -out:$(OUTPUT)\static\$(LIBRARY_NAME).lib *.obj
+	lib -nologo -machine:x64 -out:$(OUTPUT)\shared\$(NAME).lib -def:$(SOURCE)\$(NAME).def
+	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:$(OUTPUT)\shared\$(NAME).dll
+	lib -nologo -machine:x64 -out:$(OUTPUT)\static\$(NAME).lib *.obj
 
 clean::
-	-del *.exe *.obj *.pdb *.ilk *.link
+	-del *.exe *.obj *.pdb *.ilk *.link 2>nul
 

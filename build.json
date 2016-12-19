@@ -6,6 +6,24 @@
       "repository": "snapshots",
       "version": "0.0.1-SNAPSHOT"
    },
+   "dependencies": [
+      {
+         "groupId": "com.rsmaxwell",
+         "artifactId": "cunit-2.1.2",
+         "version": "0.0.1-SNAPSHOT"
+      }
+   ],
+   "repositories": [
+      {
+         "id": "MaxwellHouse",
+         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/releases"
+      },
+      {
+         "id": "MaxwellHouse",
+         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/snapshots",
+         "updatePolicy": "always"
+      }
+   ],
    "distributionManagement": {
       "repository": {
          "deployment": {
