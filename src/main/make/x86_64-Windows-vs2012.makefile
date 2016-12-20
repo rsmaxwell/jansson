@@ -2,29 +2,31 @@
 CC = cl
 LD = link
 
+CFLAGS_BASE = /c /W2 /nologo /wd4090
+CFLAGS_NORMAL = /MD
+CFLAGS_DEBUG = /MDd /Zi /Od
 
-CFLAGS_BASE = -c -GS -W2 -Zc:wchar_t -sdl -Zc:inline -fp:precise -WX- -Zc:forScope -RTC1 -Gd -EHsc -nologo -wd4090
-CFLAGS_NORMAL = -MD
-CFLAGS_DEBUG = -MDd -Gm -Zi -Od
+DEFINES_BASE = /DHAVE_CONFIG_H /D_CRT_SECURE_NO_WARNINGS /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_NON_CONFORMING_SWPRINTFS
+DEFINES_DEBUG =
 
-DEFINES_BASE = -D_MT -D_DLL -DbuildLabel=$(buildLabel) -D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_NON_CONFORMING_SWPRINTFS -DHAVE_CONFIG_H
-DEFINES_DEBUG = -D_DEBUG
-
-LINKFLAGS_BASE = /MACHINE:X64 /SUBSYSTEM:CONSOLE /NOLOGO
+LINKFLAGS_BASE = /DLL /NODEFAULTLIB /NOLOGO
 LINKFLAGS_DEBUG = /DEBUG
 
 
 ifeq ($(BUILD_TYPE),debug)
-  CFLAGS = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
   DEFINES = $(DEFINES_BASE) $(DEFINES_DEBUG)
+  CFLAGS = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
+  CRTLIB = msvcrtd.lib
 else
-  CFLAGS = $(CFLAGS_BASE) $(CFLAGS_NORMAL)
   DEFINES = $(DEFINES_BASE)
+  CFLAGS = $(CFLAGS_BASE) $(CFLAGS_NORMAL)
   LINKFLAGS = $(LINKFLAGS_BASE)
+  CRTLIB = msvcrt.lib
 endif
 
-INCLUDES = -I $(SOURCE) -I $(OUTPUT)
+
+INCLUDES = -I $(SOURCE) -I $(subst /,\,../../dist/include)
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h)
 
@@ -35,9 +37,11 @@ all : $(OUTPUT)\shared\$(NAME).dll $(OUTPUT)\static\$(NAME).lib
 $(OUTPUT)\shared\$(NAME).dll $(OUTPUT)\static\$(NAME).lib: $(SOURCES) $(HEADERS)
 	-mkdir $(OUTPUT)\shared 2>nul
 	-mkdir $(OUTPUT)\static 2>nul
-	-del $(NAME).link 2>nul
-	echo $(OUTPUT)\shared\$(NAME).exp                                             >> $(NAME).link
-	echo msvcrt.lib oldnames.lib kernel32.lib user32.lib advapi32.lib dbghelp.lib >> $(NAME).link
+	-del $(NAME).link $(NAME).def 1>nul 2>nul
+	echo $(OUTPUT)\shared\$(NAME).exp                                              >> $(NAME).link
+	echo oldnames.lib kernel32.lib user32.lib advapi32.lib dbghelp.lib             >> $(NAME).link
+	echo $(CRTLIB)                                                                 >> $(NAME).link
+	echo $(wildcard ../../dependencies/cunit/lib/static/*.lib)                     >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
 	lib -nologo -machine:x64 -out:$(OUTPUT)\shared\$(NAME).lib -def:$(SOURCE)\$(NAME).def
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:$(OUTPUT)\shared\$(NAME).dll

@@ -2,14 +2,14 @@
 CC = cl
 LD = link
 
-CFLAGS_BASE = /c /GS /W2 /nologo
-CFLAGS_NORMAL = /MD
-CFLAGS_DEBUG = /MDd /Gm /Zi /Od
+CFLAGS_BASE = /c /W2 /nologo
+CFLAGS_NORMAL = /MT
+CFLAGS_DEBUG = /MTd /Zi /Od
 
-DEFINES_BASE = /D_MT /DbuildLabel=$(buildLabel) /D_CRT_SECURE_NO_WARNINGS /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_NON_CONFORMING_SWPRINTFS
-DEFINES_DEBUG = /D_DEBUG
+DEFINES_BASE = /D_CRT_SECURE_NO_WARNINGS /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_NON_CONFORMING_SWPRINTFS
+DEFINES_DEBUG =
 
-LINKFLAGS_BASE = /MACHINE:X64 /INCREMENTAL /SUBSYSTEM:CONSOLE /NOLOGO /NODEFAULTLIB
+LINKFLAGS_BASE = /NODEFAULTLIB /NOLOGO
 LINKFLAGS_DEBUG = /DEBUG 
 
 
@@ -35,7 +35,6 @@ NAME = janssontest
 all : $(NAME)
 
 $(NAME): $(SOURCES) $(HEADERS)
-	-echo $(SOURCES)
 	-del $(NAME).link $(NAME).def 1>nul 2>nul
 	echo kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib  >> $(NAME).link
 	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
@@ -46,7 +45,6 @@ $(NAME): $(SOURCES) $(HEADERS)
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:$(NAME).exe
 
 clean::
-	-del *.exe *.obj *.pdb *.ilk *.link *.manifest *.exp *.lib *.txt 2>nul
-
+	-del /q $(OUTPUT)\* 2>nul
 
 

@@ -2,32 +2,31 @@
 CC = cl
 LD = link
 
-CFLAGS_BASE = /c /GS /W2 /Zc:wchar_t /sdl /Zc:inline /fp:precise /WX- /Zc:forScope /RTC1 /Gd /EHsc /nologo /wd4090
-CFLAGS_NODEBUG = /MD
-CFLAGS_DEBUG = /MDd /Gm /Zi /Od 
+CFLAGS_BASE = /c /W2 /nologo /wd4090
+CFLAGS_NORMAL = /MD
+CFLAGS_DEBUG = /MDd /Zi /Od
 
-DEFINES_BASE = /D_MT /DbuildLabel=$(buildLabel) /D_CRT_SECURE_NO_WARNINGS /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_NON_CONFORMING_SWPRINTFS /DHAVE_CONFIG_H
-DEFINES_DEBUG = /D_DEBUG
+DEFINES_BASE = /DHAVE_CONFIG_H /D_CRT_SECURE_NO_WARNINGS /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_NON_CONFORMING_SWPRINTFS
+DEFINES_DEBUG =
 
-LINKFLAGS_BASE = /MANIFEST /NXCOMPAT /MACHINE:X64 /INCREMENTAL /SUBSYSTEM:CONSOLE /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /NOLOGO /TLBID:1 /DLL
-LINKFLAGS_NODEBUG =
-LINKFLAGS_DEBUG = /DEBUG 
-
+LINKFLAGS_BASE = /DLL /NODEFAULTLIB /NOLOGO
+LINKFLAGS_DEBUG = /DEBUG
 
 
 ifeq ($(BUILD_TYPE),debug)
   DEFINES = $(DEFINES_BASE) $(DEFINES_DEBUG)
   CFLAGS = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
-  CRTLIB=libcmtd.lib libvcruntimed.lib libucrtd.lib
+  CRTLIB = libcmtd.lib libvcruntimed.lib libucrtd.lib
 else
   DEFINES = $(DEFINES_BASE)
-  CFLAGS = $(CFLAGS_BASE) $(CFLAGS_NODEBUG)
-  LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_NODEBUG)
-  CRTLIB=msvcrt.lib vcruntime.lib ucrt.lib
+  CFLAGS = $(CFLAGS_BASE) $(CFLAGS_NORMAL)
+  LINKFLAGS = $(LINKFLAGS_BASE)
+  CRTLIB = msvcrt.lib vcruntime.lib ucrt.lib
 endif
 
-INCLUDES = -I $(SOURCE) -I $(OUTPUT)
+
+INCLUDES = -I $(SOURCE)
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h)
 
@@ -50,5 +49,5 @@ $(OUTPUT)\shared\$(NAME).dll $(OUTPUT)\static\$(NAME).lib: $(SOURCES) $(HEADERS)
 	lib -nologo -machine:x64 -out:$(OUTPUT)\static\$(NAME).lib *.obj
 
 clean::
-	-del *.exe *.obj *.pdb *.ilk *.link 2>nul
+	-del /q $(OUTPUT)\* 2>nul
 
