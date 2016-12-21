@@ -17,12 +17,12 @@ ifeq ($(BUILD_TYPE),debug)
   DEFINES = $(DEFINES_BASE) $(DEFINES_DEBUG)
   CFLAGS = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
-  CRTLIB=msvcrtd.lib
+  CRTLIB=libcmtd.lib
 else
   DEFINES = $(DEFINES_BASE)
   CFLAGS = $(CFLAGS_BASE) $(CFLAGS_NORMAL)
   LINKFLAGS = $(LINKFLAGS_BASE)
-  CRTLIB=msvcrt.lib
+  CRTLIB=libcmt.lib
 endif
 
 
@@ -32,9 +32,9 @@ HEADERS = $(wildcard $(SOURCE)/*.h) $(wildcard ../../dependencies/cunit/include/
 
 NAME = janssontest
 
-all : $(NAME)
+all : $(NAME).exe
 
-$(NAME): $(SOURCES) $(HEADERS)
+$(NAME).exe: $(SOURCES) $(HEADERS)
 	-del $(NAME).link $(NAME).def 1>nul 2>nul
 	echo kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib  >> $(NAME).link
 	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
