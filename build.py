@@ -7,6 +7,7 @@ import gzip
 import tarfile
 import glob
 import os
+import subprocess
 from os.path import expanduser
 
 
@@ -79,7 +80,9 @@ def configure(config, aol):
         configureScript = 'configure'
         os.chmod(buildsystem.BUILD_SOURCE_MAIN_DIR + configureScript, 0o777)
 
-        buildsystem.runProgram(config, buildsystem.BUILD_SOURCE_MAIN_DIR, os.environ, ['bash', configureScript, '--prefix=/usr/local'])
+        # Run the configure script
+        p = subprocess.Popen(['bash', configureScript, '--prefix=/usr/local'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=buildsystem.BUILD_SOURCE_MAIN_DIR)
+        buildsystem.checkProcessCompletesOk(config, p, 'Error: Configure failed')
 
 
 ####################################################################################################
@@ -94,17 +97,27 @@ def compile(config, aol):
     if aol.operatingSystem == 'windows':
         makefile = os.path.relpath(buildsystem.SRC_MAIN_MAKE_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR) + '\\' + str(aol) + '.makefile'
         env = os.environ
-        env['BUILD_TYPE'] = 'normal'
+        env['BUILD_TYPE'] = 'static'
         env['SOURCE'] = os.path.relpath(BUILD_SOURCE_MAIN_SRC_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR)
         env['OUTPUT'] = '.'
-        stdout, stderr, returncode = buildsystem.runProgram(config, buildsystem.BUILD_OUTPUT_MAIN_DIR, env, ['make', '-f', makefile, 'clean', 'all'])
+
+        args = ['make', '-f', makefile, 'clean', 'all']
+
+        if buildsystem.verbose(config):
+            print('Args = ' + str(args))
+
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, cwd=buildsystem.BUILD_OUTPUT_MAIN_DIR)
+        buildsystem.checkProcessCompletesOk(config, p, 'Error: Make failed', expectedReturnCodes=[0,1])
+
 
     else:     # Linux or MinGW or CygWin
-        stdout, stderr, returncode = buildsystem.runProgram(config, buildsystem.BUILD_SOURCE_MAIN_DIR, os.environ, ['make', 'clean', 'all'])
+        args = ['make', 'clean', 'all']
 
-    if (returncode != 0):
-        print("Failed: compile failed: " + str(returncode))
-        sys.exit(1)
+        if buildsystem.verbose(config):
+            print('Args = ' + str(args))
+
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=buildsystem.BUILD_SOURCE_MAIN_DIR)
+        buildsystem.checkProcessCompletesOk(config, p, 'Error: Make failed', expectedReturnCodes=[0,1])
 
 
 ####################################################################################################
