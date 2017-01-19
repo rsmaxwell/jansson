@@ -100,6 +100,7 @@ def compile(config, aol):
         env['BUILD_TYPE'] = 'static'
         env['SOURCE'] = os.path.relpath(BUILD_SOURCE_MAIN_SRC_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR)
         env['OUTPUT'] = '.'
+        env['INSTALL'] = buildsystem.INSTALL_DIR      
 
         args = ['make', '-f', makefile, 'clean', 'all']
 

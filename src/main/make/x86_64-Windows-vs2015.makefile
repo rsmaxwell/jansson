@@ -45,7 +45,7 @@ else
 endif
 
 
-INCLUDES = -I $(SOURCE)
+INCLUDES = -I $(SOURCE) -I $(subst /,\,$(INSTALL)/include)
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h)
 
@@ -56,17 +56,17 @@ all : shared\$(NAME).dll static\$(NAME).lib
 shared\$(NAME).dll static\$(NAME).lib: $(SOURCES) $(HEADERS)
 	@echo SOURCES = $(SOURCES)
 	@echo HEADERS = $(HEADERS)
-	@echo DIST = $(DIST)
+	@echo INSTALL = $(INSTALL)
 	@echo BUILD_TYPE = $(BUILD_TYPE)
 	@echo pwd = ${CURDIR}
 	-mkdir shared 2>nul
 	-mkdir static 2>nul
 	-del $(NAME).link $(NAME).def 1>nul 2>nul
-	echo shared\$(NAME).exp                                              >> $(NAME).link
+	echo shared\$(NAME).exp                                                        >> $(NAME).link
 	echo kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib  >> $(NAME).link
 	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
 	echo $(CRTLIB)                                                                 >> $(NAME).link
-	echo $(wildcard ../../dependencies/cunit/lib/static/*.lib)                     >> $(NAME).link
+	echo $(wildcard $(INSTALL)lib/static/*.lib)                                    >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
 	lib -nologo -machine:x64 -out:shared\$(NAME).lib -def:$(SOURCE)\$(NAME).def
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:shared\$(NAME).dll

@@ -26,7 +26,7 @@ else
 endif
 
 
-INCLUDES = -I $(SOURCE) -I $(subst /,\,../../dist/include)
+INCLUDES = -I $(SOURCE) -I $(subst /,\,$(INSTALL)/include)
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h)
 
@@ -35,13 +35,18 @@ NAME = jansson
 all : $(OUTPUT)\shared\$(NAME).dll $(OUTPUT)\static\$(NAME).lib
 
 $(OUTPUT)\shared\$(NAME).dll $(OUTPUT)\static\$(NAME).lib: $(SOURCES) $(HEADERS)
+	@echo SOURCES = $(SOURCES)
+	@echo HEADERS = $(HEADERS)
+	@echo INCLUDES = $(INCLUDES)
+	@echo INSTALL = $(INSTALL)
+	@echo BUILD_TYPE = $(BUILD_TYPE)
+	@echo pwd = ${CURDIR}
 	-mkdir $(OUTPUT)\shared 2>nul
 	-mkdir $(OUTPUT)\static 2>nul
 	-del $(NAME).link $(NAME).def 1>nul 2>nul
 	echo $(OUTPUT)\shared\$(NAME).exp                                              >> $(NAME).link
 	echo oldnames.lib kernel32.lib user32.lib advapi32.lib dbghelp.lib             >> $(NAME).link
-	echo $(CRTLIB)                                                                 >> $(NAME).link
-	echo $(wildcard ../../dependencies/cunit/lib/static/*.lib)                     >> $(NAME).link
+	echo $(CRTLIB) $(wildcard $(INSTALL)lib/static/*.lib)                          >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
 	lib -nologo -machine:x64 -out:$(OUTPUT)\shared\$(NAME).lib -def:$(SOURCE)\$(NAME).def
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:$(OUTPUT)\shared\$(NAME).dll

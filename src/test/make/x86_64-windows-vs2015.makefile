@@ -45,7 +45,7 @@ else
 endif
 
 
-INCLUDES = -I $(SOURCE) -I $(subst /,\,../../dist/include) -I $(subst /,\,../../dependencies/cunit/include)
+INCLUDES = -I $(SOURCE) -I $(subst /,\,../../dist/include) -I $(subst /,\,$(INSTALL)/include)
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h) $(wildcard ../../dependencies/cunit/include/*.h)
 
@@ -56,6 +56,7 @@ all : $(NAME).exe
 $(NAME).exe: $(SOURCES) $(HEADERS)
 	@echo SOURCES = $(SOURCES)
 	@echo HEADERS = $(HEADERS)
+	@echo INSTALL = $(INSTALL)
 	@echo BUILD_TYPE = $(BUILD_TYPE)
 	@echo pwd = ${CURDIR}
 	-del $(NAME).link $(NAME).def 1>nul 2>nul
@@ -63,7 +64,7 @@ $(NAME).exe: $(SOURCES) $(HEADERS)
 	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
 	echo $(CRTLIB)                                                                 >> $(NAME).link
 	echo $(wildcard ../../dist/lib/static/*.lib)                                   >> $(NAME).link
-	echo $(wildcard ../../dependencies/cunit/lib/static/*_exe.lib)                 >> $(NAME).link
+	echo $(wildcard $(INSTALL)lib/static/*_exe.lib)                                >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:$(NAME).exe
 
