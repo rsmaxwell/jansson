@@ -45,9 +45,9 @@ else
 endif
 
 
-INCLUDES = -I $(SOURCE) -I $(subst /,\,../../dist/include) -I $(subst /,\,$(INSTALL)/include)
-SOURCES = $(wildcard $(SOURCE)/*.c)
-HEADERS = $(wildcard $(SOURCE)/*.h) $(wildcard ../../dependencies/cunit/include/*.h)
+INCLUDES = -I $(SOURCE) -I $(subst /,\,../../dist/include) -I $(subst /,\,$(INSTALL)include)
+SOURCES = $(wildcard $(SOURCE)*.c)
+HEADERS = $(wildcard $(SOURCE)/*.h) $(wildcard $(INSTALL)include/*.h)
 
 NAME = janssontest
 

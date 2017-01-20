@@ -86,7 +86,7 @@ def configure(config, aol):
 
 
 ####################################################################################################
-# Make
+# Compile
 ####################################################################################################
 
 def compile(config, aol):
@@ -96,10 +96,14 @@ def compile(config, aol):
 
     if aol.operatingSystem == 'windows':
         makefile = os.path.relpath(buildsystem.SRC_MAIN_MAKE_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR) + '\\' + str(aol) + '.makefile'
+        source = os.path.relpath(BUILD_SOURCE_MAIN_SRC_DIR, buildsystem.BUILD_OUTPUT_TEST_DIR)
+        dist = os.path.relpath(buildsystem.DIST_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR)
+
         env = os.environ
         env['BUILD_TYPE'] = 'static'
-        env['SOURCE'] = os.path.relpath(BUILD_SOURCE_MAIN_SRC_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR)
+        env['SOURCE'] = source
         env['OUTPUT'] = '.'
+        env['DIST'] = dist
         env['INSTALL'] = buildsystem.INSTALL_DIR      
 
         args = ['make', '-f', makefile, 'clean', 'all']

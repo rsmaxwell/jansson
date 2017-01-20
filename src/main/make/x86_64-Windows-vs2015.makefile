@@ -17,35 +17,31 @@ ifeq ($(BUILD_TYPE),static)
   CFLAGS    = $(CFLAGS_BASE) /MT
   LINKFLAGS = $(LINKFLAGS_BASE)
   CRTLIB    = libcmt.lib libvcruntime.lib libucrt.lib
-  CUNITLIB  = static/libcunit_exe.lib
 
 else ifeq ($(BUILD_TYPE),static_debug)
   DEFINES   = $(DEFINES_BASE) $(DEFINES_DEBUG)
   CFLAGS    = $(CFLAGS_BASE) $(CFLAGS_DEBUG) /MTd
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
   CRTLIB    = libcmtd.lib libvcruntimed.lib libucrtd.lib
-  CUNITLIB  = static/libcunitd_exe.lib
 
 else ifeq ($(BUILD_TYPE),dynamic)
   DEFINES   = $(DEFINES_BASE)
   CFLAGS    = $(CFLAGS_BASE) /MD
   LINKFLAGS = $(LINKFLAGS_BASE)
   CRTLIB    = msvcrt.lib vcruntime.lib ucrt.lib
-  CUNITLIB  = shared/libcunit.lib
 
 else ifeq ($(BUILD_TYPE),dynamic_debug)
   DEFINES   = $(DEFINES_BASE) $(DEFINES_DEBUG)
   CFLAGS    = $(CFLAGS_BASE) $(CFLAGS_DEBUG) /MDd
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
   CRTLIB    = msvcrtd.lib vcruntimed.lib ucrtd.lib
-  CUNITLIB  = shared/libcunitd.lib
 
 else 
   $(error BUILD_TYPE=$(BUILD_TYPE) is not supported)
 endif
 
 
-INCLUDES = -I $(SOURCE) -I $(subst /,\,$(INSTALL)/include)
+INCLUDES = -I $(SOURCE) -I $(subst /,\,$(DIST)/include) -I $(subst /,\,$(INSTALL)/include)
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h)
 
