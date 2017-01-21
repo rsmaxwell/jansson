@@ -102,7 +102,6 @@ def compile(config, aol):
         env = os.environ
         env['BUILD_TYPE'] = 'static'
         env['SOURCE'] = source
-        env['OUTPUT'] = '.'
         env['DIST'] = dist
         env['INSTALL'] = buildsystem.INSTALL_DIR      
 

@@ -3,6 +3,7 @@ CC = cl
 LD = link
 
 CFLAGS_BASE = /c /W2 /nologo
+CFLAGS_DEBUG = /Zi /Od
 
 DEFINES_BASE = /D_CRT_SECURE_NO_WARNINGS /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE /D_CRT_NON_CONFORMING_SWPRINTFS
 DEFINES_DEBUG =
@@ -19,7 +20,7 @@ ifeq ($(BUILD_TYPE),static)
 
 else ifeq ($(BUILD_TYPE),static_debug)
   DEFINES   = $(DEFINES_BASE) $(DEFINES_DEBUG)
-  CFLAGS    = $(CFLAGS_BASE) /MTd /Zi /Od
+  CFLAGS    = $(CFLAGS_BASE) $(CFLAGS_DEBUG) /MTd
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
   CRTLIB    = libcmtd.lib
   CUNITLIB  = static/libcunitd_exe.lib
@@ -33,7 +34,7 @@ else ifeq ($(BUILD_TYPE),dynamic)
 
 else ifeq ($(BUILD_TYPE),dynamic_debug)
   DEFINES   = $(DEFINES_BASE) $(DEFINES_DEBUG)
-  CFLAGS    = $(CFLAGS_BASE) /MDd /Zi /Od
+  CFLAGS    = $(CFLAGS_BASE) $(CFLAGS_DEBUG) /MDd
   LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
   CRTLIB    = msvcrtd.lib
   CUNITLIB  = shared/libcunitd.lib
@@ -52,9 +53,10 @@ NAME = janssontest
 all : $(NAME).exe
 
 $(NAME).exe: $(SOURCES) $(HEADERS)
-	@echo SOURCE = $(SOURCE)
-	@echo INSTALL = $(INSTALL)
 	@echo BUILD_TYPE = $(BUILD_TYPE)
+	@echo SOURCE = $(SOURCE)
+	@echo DIST = $(DIST)
+	@echo INSTALL = $(INSTALL)
 	@echo INCLUDES = $(INCLUDES)
 	@echo SOURCES = $(SOURCES)
 	@echo HEADERS = $(HEADERS)
@@ -63,7 +65,7 @@ $(NAME).exe: $(SOURCES) $(HEADERS)
 	echo kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib  >> $(NAME).link
 	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
 	echo $(CRTLIB)                                                                 >> $(NAME).link
-	echo $(wildcard ../../dist/lib/static/*.lib)                                   >> $(NAME).link
+	echo $(wildcard $(DIST)/lib/static/*.lib)                                      >> $(NAME).link
 	echo $(wildcard $(INSTALL)lib/static/*_exe.lib)                                >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:$(NAME).exe

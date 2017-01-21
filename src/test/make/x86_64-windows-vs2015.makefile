@@ -46,7 +46,7 @@ endif
 
 
 INCLUDES = -I $(SOURCE) -I $(subst /,\,../../dist/include) -I $(subst /,\,$(INSTALL)include)
-SOURCES = $(wildcard $(SOURCE)*.c)
+SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h) $(wildcard $(INSTALL)include/*.h)
 
 NAME = janssontest
@@ -54,16 +54,19 @@ NAME = janssontest
 all : $(NAME).exe
 
 $(NAME).exe: $(SOURCES) $(HEADERS)
+	@echo BUILD_TYPE = $(BUILD_TYPE)
+	@echo SOURCE = $(SOURCE)
+	@echo DIST = $(DIST)
+	@echo INSTALL = $(INSTALL)
+	@echo INCLUDES = $(INCLUDES)
 	@echo SOURCES = $(SOURCES)
 	@echo HEADERS = $(HEADERS)
-	@echo INSTALL = $(INSTALL)
-	@echo BUILD_TYPE = $(BUILD_TYPE)
 	@echo pwd = ${CURDIR}
 	-del $(NAME).link $(NAME).def 1>nul 2>nul
 	echo kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib  >> $(NAME).link
 	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
 	echo $(CRTLIB)                                                                 >> $(NAME).link
-	echo $(wildcard ../../dist/lib/static/*.lib)                                   >> $(NAME).link
+	echo $(wildcard $(DIST)/lib/static/*.lib)                                      >> $(NAME).link
 	echo $(wildcard $(INSTALL)lib/static/*_exe.lib)                                >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:$(NAME).exe
