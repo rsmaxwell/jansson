@@ -62,7 +62,7 @@ shared\$(NAME).dll static\$(NAME).lib: $(SOURCES) $(HEADERS)
 	echo kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib  >> $(NAME).link
 	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
 	echo $(CRTLIB)                                                                 >> $(NAME).link
-	echo $(wildcard $(INSTALL)lib/static/*.lib)                                    >> $(NAME).link
+	echo $(wildcard $(INSTALL)lib/static/exe/*.lib)                                >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
 	lib -nologo -machine:x64 -out:shared\$(NAME).lib -def:$(SOURCE)\$(NAME).def
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:shared\$(NAME).dll

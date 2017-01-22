@@ -45,9 +45,9 @@ else
 endif
 
 
-INCLUDES = -I $(SOURCE) -I $(subst /,\,../../dist/include) -I $(subst /,\,$(INSTALL)include)
+INCLUDES = -I $(SOURCE) -I $(subst /,\,$(DIST)/include) -I $(subst /,\,$(INSTALL)include)
 SOURCES = $(wildcard $(SOURCE)/*.c)
-HEADERS = $(wildcard $(SOURCE)/*.h) $(wildcard $(INSTALL)include/*.h)
+HEADERS = $(wildcard $(SOURCE)/*.h)
 
 NAME = janssontest
 
@@ -66,8 +66,8 @@ $(NAME).exe: $(SOURCES) $(HEADERS)
 	echo kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib  >> $(NAME).link
 	echo shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib       >> $(NAME).link
 	echo $(CRTLIB)                                                                 >> $(NAME).link
-	echo $(wildcard $(DIST)/lib/static/*.lib)                                      >> $(NAME).link
-	echo $(wildcard $(INSTALL)lib/static/*_exe.lib)                                >> $(NAME).link
+	echo $(wildcard $(DIST)/lib/static/exe/*.lib)                                  >> $(NAME).link
+	echo $(wildcard $(INSTALL)lib/static/exe/*.lib)                                >> $(NAME).link
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
 	$(LD) $(LINKFLAGS) *.obj @$(NAME).link -out:$(NAME).exe
 

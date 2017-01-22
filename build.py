@@ -135,7 +135,7 @@ def distribution(config, aol):
 
     buildsystem.mkdir_p(buildsystem.DIST_INCLUDE_DIR)
     buildsystem.mkdir_p(buildsystem.DIST_LIB_SHARED_DIR)
-    buildsystem.mkdir_p(buildsystem.DIST_LIB_STATIC_DIR)
+    buildsystem.mkdir_p(buildsystem.DIST_LIB_STATIC_DIR + 'exe/')
     buildsystem.mkdir_p(buildsystem.BUILD_ARTIFACT_DIR)
 
     shutil.copy2(BUILD_SOURCE_MAIN_SRC_DIR + 'jansson.h', buildsystem.DIST_INCLUDE_DIR)
@@ -145,7 +145,7 @@ def distribution(config, aol):
         shutil.copy2(buildsystem.BUILD_OUTPUT_MAIN_DIR + 'shared/jansson.lib', buildsystem.DIST_LIB_SHARED_DIR)
         shutil.copy2(buildsystem.BUILD_OUTPUT_MAIN_DIR + 'shared/jansson.dll', buildsystem.DIST_LIB_SHARED_DIR)
 
-        shutil.copy2(buildsystem.BUILD_OUTPUT_MAIN_DIR + 'static/jansson.lib', buildsystem.DIST_LIB_STATIC_DIR)
+        shutil.copy2(buildsystem.BUILD_OUTPUT_MAIN_DIR + 'static/jansson.lib', buildsystem.DIST_LIB_STATIC_DIR + 'exe/')
 
     else:     # Linux or MinGW or CygWin
         for file in glob.iglob(BUILD_SOURCE_MAIN_SRC_LIB_DIR + '*.a'):
