@@ -1,7 +1,7 @@
 
 CC = gcc
 
-CFLAGS_BASE = -m64 -Wall -fPIC 
+CFLAGS_BASE = -m64 -Wall -Wno-format-zero-length -Wno-pointer-sign -Wno-unused-variable
 CFLAGS_DEBUG = -g -rdynamic
 LINKFLAGS_BASE = -shared 
 LINKFLAGS_DEBUG =
@@ -18,25 +18,27 @@ else
   DEFINES = $(DEFINES_BASE)
 endif   
 
-INCLUDES = -I $(subst /,\,$(SOURCE_DIR)) \
-           -I $(subst /,\,$(BUILD_DIR)/dependances/CUnit/headers/CUnit) \
-           -I $(subst /,\,$(BUILD_DIR)/dependances/jansson/headers)
+INCLUDES = -I $(SOURCE) -I $(DIST)/include -I $(INSTALL)include
 
-SOURCES = $(wildcard $(SOURCE_DIR)/*.c)
+SOURCES = $(wildcard $(SOURCE)/*.c)
 
-HEADERS = $(subst /,\,$(wildcard $(SOURCE_DIR)/*.h)) \
-          $(subst /,\,$(wildcard $(BUILD_DIR)/dependances/CUnit/headers/CUnit/*.h)) \
-          $(subst /,\,$(wildcard $(BUILD_DIR)/dependances/jansson/headers/jansson/*.h))
+HEADERS = $(wildcard $(SOURCE)/*.h) 
 
-PROGRAM = janssontest
 
-all : $(PROGRAM)
+NAME = janssontest
 
-$(PROGRAM): $(SOURCES)  $(HEADERS)
-	@echo "BUILD_TYPE = $(BUILD_TYPE)"
-	@echo "SOURCE_DIR = $(SOURCE_DIR)"
-	@echo "BUILD_DIR = $(BUILD_DIR)"
-	$(CC) $(CFLAGS) $(DEFINES) -D_REENTRANT $(INCLUDES) $(LINKFLAGS) -o $(PROGRAM) $(SOURCES)
+all : $(NAME)
+
+$(NAME): $(SOURCES) $(HEADERS)
+	@echo BUILD_TYPE = $(BUILD_TYPE)
+	@echo SOURCE = $(SOURCE)
+	@echo DIST = $(DIST)
+	@echo INSTALL = $(INSTALL)
+	@echo INCLUDES = $(INCLUDES)
+	@echo SOURCES = $(SOURCES)
+	@echo HEADERS = $(HEADERS)
+	@echo pwd = ${CURDIR}
+	$(CC) $(CFLAGS) $(DEFINES) -D_REENTRANT $(INCLUDES) $(LINKFLAGS) -o $(NAME) $(SOURCES)
 
 clean::
-	-@rm $(PROGRAM)
+	-@rm $(NAME) 1>/dev/null 2>&1

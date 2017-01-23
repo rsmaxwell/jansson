@@ -49,6 +49,7 @@ INCLUDES = -I $(SOURCE) -I $(subst /,\,$(DIST)/include) -I $(subst /,\,$(INSTALL
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h)
 
+
 NAME = janssontest
 
 all : $(NAME).exe
