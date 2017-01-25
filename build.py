@@ -12,7 +12,7 @@ from os.path import expanduser
 
 
 BUILD_SOURCE_MAIN_SRC_DIR     = './build/source/main/src/'
-BUILD_SOURCE_MAIN_SRC_LIB_DIR = './build/source/main/src/lib/'
+BUILD_SOURCE_MAIN_SRC_LIB_DIR = './build/source/main/src/.libs/'
 
 
 ####################################################################################################
@@ -105,7 +105,7 @@ def compile(config, aol):
         env['DIST'] = dist
         env['INSTALL'] = buildsystem.INSTALL_DIR      
 
-        args = ['make', '-f', makefile, 'clean', 'all']
+        args = ['make', '-f', makefile, 'clean', 'dist']
 
         if buildsystem.verbose(config):
             print('Args = ' + str(args))
@@ -115,7 +115,7 @@ def compile(config, aol):
 
 
     else:     # Linux or MinGW or CygWin
-        args = ['make', 'clean', 'all']
+        args = ['make', 'clean', 'dist']
 
         if buildsystem.verbose(config):
             print('Args = ' + str(args))
