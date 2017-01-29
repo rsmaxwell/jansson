@@ -3,25 +3,44 @@ CC = gcc
 
 CFLAGS_BASE = -m64 -Wall -Wno-format-zero-length -Wno-pointer-sign -Wno-unused-variable
 CFLAGS_DEBUG = -g -rdynamic
-LINKFLAGS_BASE = -shared 
-LINKFLAGS_DEBUG =
-DEFINES_BASE = -DbuildLabel=$(buildLabel) 
-DEFINES_DEBUG = -DCLOUD_DEBUG
 
-ifeq ($(BUILD_TYPE),debug)
-  CFLAGS = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
-  LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
-  DEFINES = $(DEFINES_BASE) $(DEFINES_DEBUG)
-else
-  CFLAGS = $(CFLAGS_BASE)
+DEFINES_BASE = -DbuildLabel=$(buildLabel) 
+DEFINES_DEBUG =
+
+LINKFLAGS_BASE = -v -shared -L/usr/local/lib
+LINKFLAGS_DEBUG =
+
+ifeq ($(BUILD_TYPE),static)
+  DEFINES   = $(DEFINES_BASE)
+  CFLAGS    = $(CFLAGS_BASE)
   LINKFLAGS = $(LINKFLAGS_BASE)
-  DEFINES = $(DEFINES_BASE)
-endif   
+  CUNITLIB  = cunit
+
+else ifeq ($(BUILD_TYPE),static_debug)
+  DEFINES   = $(DEFINES_BASE) $(DEFINES_DEBUG)
+  CFLAGS    = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
+  LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
+  CUNITLIB  = cunitd
+
+else ifeq ($(BUILD_TYPE),dynamic)
+  DEFINES   = $(DEFINES_BASE)
+  CFLAGS    = $(CFLAGS_BASE)
+  LINKFLAGS = $(LINKFLAGS_BASE)
+  CUNITLIB  = cunit
+
+else ifeq ($(BUILD_TYPE),dynamic_debug)
+  DEFINES   = $(DEFINES_BASE) $(DEFINES_DEBUG)
+  CFLAGS    = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
+  LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
+  CUNITLIB  = cunitd
+
+else 
+  $(error BUILD_TYPE=$(BUILD_TYPE) is not supported)
+endif
+
 
 INCLUDES = -I $(SOURCE) -I $(DIST)/include -I $(INSTALL)include
-
 SOURCES = $(wildcard $(SOURCE)/*.c)
-
 HEADERS = $(wildcard $(SOURCE)/*.h) 
 
 
@@ -38,7 +57,7 @@ $(NAME): $(SOURCES) $(HEADERS)
 	@echo SOURCES = $(SOURCES)
 	@echo HEADERS = $(HEADERS)
 	@echo pwd = ${CURDIR}
-	$(CC) $(CFLAGS) $(DEFINES) -D_REENTRANT $(INCLUDES) $(LINKFLAGS) -o $(NAME) $(SOURCES)
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(LINKFLAGS) -o $(NAME) $(SOURCES) -l$(CUNITLIB) 
 
 clean::
 	-@rm $(NAME) 1>/dev/null 2>&1
