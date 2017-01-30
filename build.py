@@ -105,7 +105,7 @@ def compile(config, aol):
         env['DIST'] = dist
         env['INSTALL'] = buildsystem.INSTALL_DIR      
 
-        args = ['make', '-f', makefile, 'clean', 'dist']
+        args = ['make', '-f', makefile, 'clean', 'compile', 'cmake', 'dist']
 
         if buildsystem.verbose(config):
             print('Args = ' + str(args))
@@ -115,7 +115,7 @@ def compile(config, aol):
 
 
     else:     # Linux or MinGW or CygWin
-        args = ['make', 'clean', 'dist']
+        args = ['make', 'clean', 'compile', 'cmake', 'dist']
 
         if buildsystem.verbose(config):
             print('Args = ' + str(args))
