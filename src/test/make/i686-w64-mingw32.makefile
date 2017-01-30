@@ -1,13 +1,13 @@
 
 CC = gcc
 
-CFLAGS_BASE = -m32 -Wall -Wno-format-zero-length -Wno-pointer-sign -Wno-unused-variable
+CFLAGS_BASE = -c -Wall -Wno-format-zero-length -Wno-pointer-sign -Wno-unused-variable
 CFLAGS_DEBUG = -g
 
 DEFINES_BASE = -DbuildLabel=$(buildLabel) 
 DEFINES_DEBUG =
 
-LINKFLAGS_BASE = -v -L/usr/local/lib -L$(DIST)
+LINKFLAGS_BASE = -L/usr/local/lib -L$(DIST)
 LINKFLAGS_DEBUG =
 
 ifeq ($(BUILD_TYPE),static)
@@ -38,6 +38,9 @@ endif
 INCLUDES = -I $(SOURCE) -I $(DIST)/include -I $(INSTALL)include
 SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h) 
+SOURCE_BASENAMES = $(notdir $(SOURCES))
+OBJECTS = $(SOURCE_BASENAMES:.c=.o)
+DEPENDANCES=-Wl,-Bstatic -lcunit -L$(DIST)/lib
 
 
 NAME = janssontest
@@ -53,7 +56,8 @@ $(NAME): $(SOURCES) $(HEADERS)
 	@echo SOURCES = $(SOURCES)
 	@echo HEADERS = $(HEADERS)
 	@echo pwd = ${CURDIR}
-	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(LINKFLAGS) -o $(NAME) $(SOURCES)
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES)
+	libtool --mode=link gcc $(LINKFLAGS) -o $(NAME) $(OBJECTS) $(DEPENDANCES)
 
 clean::
 	-@rm $(NAME) 1>/dev/null 2>&1
