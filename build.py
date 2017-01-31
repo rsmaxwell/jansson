@@ -134,14 +134,16 @@ def distribution(config, aol):
     buildsystem.mkdir_p(config, aol, buildsystem.DIST_DIR)
 
     buildsystem.mkdir_p(config, aol, buildsystem.DIST_INCLUDE_DIR)
-    buildsystem.mkdir_p(config, aol, buildsystem.DIST_LIB_SHARED_DIR)
-    buildsystem.mkdir_p(config, aol, buildsystem.DIST_LIB_STATIC_DIR + 'exe/')
+    buildsystem.mkdir_p(config, aol, buildsystem.DIST_LIB_DIR)
     buildsystem.mkdir_p(config, aol, buildsystem.BUILD_ARTIFACT_DIR)
 
     shutil.copy2(BUILD_SOURCE_MAIN_SRC_DIR + 'jansson.h', buildsystem.DIST_INCLUDE_DIR)
     shutil.copy2(BUILD_SOURCE_MAIN_SRC_DIR + 'jansson_config.h', buildsystem.DIST_INCLUDE_DIR)
 
     if aol.operatingSystem == 'windows':
+        buildsystem.mkdir_p(config, aol, buildsystem.DIST_LIB_SHARED_DIR)
+        buildsystem.mkdir_p(config, aol, buildsystem.DIST_LIB_STATIC_DIR + 'exe/')
+
         shutil.copy2(buildsystem.BUILD_OUTPUT_MAIN_DIR + 'shared/jansson.lib', buildsystem.DIST_LIB_SHARED_DIR)
         shutil.copy2(buildsystem.BUILD_OUTPUT_MAIN_DIR + 'shared/jansson.dll', buildsystem.DIST_LIB_SHARED_DIR)
 
@@ -149,19 +151,19 @@ def distribution(config, aol):
 
     else:     # Linux or MinGW or CygWin
         for file in glob.iglob(BUILD_SOURCE_MAIN_SRC_LIB_DIR + '*.a'):
-            shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR)
+            shutil.copy2(file, buildsystem.DIST_LIB_DIR)
 
         for file in glob.iglob(BUILD_SOURCE_MAIN_SRC_LIB_DIR + '*.exp'):
-            shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR)
+            shutil.copy2(file, buildsystem.DIST_LIB_DIR)
 
         for file in glob.iglob(BUILD_SOURCE_MAIN_SRC_LIB_DIR + '*.dll'):
-            shutil.copy2(file, buildsystem.DIST_LIB_SHARED_DIR)
+            shutil.copy2(file, buildsystem.DIST_LIB_DIR)
 
         for file in glob.iglob(BUILD_SOURCE_MAIN_SRC_LIB_DIR + '*.la*'):
-            shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR)
+            shutil.copy2(file, buildsystem.DIST_LIB_DIR)
 
         for file in glob.iglob(BUILD_SOURCE_MAIN_SRC_LIB_DIR + '*.la*'):
-            shutil.copy2(file, buildsystem.DIST_LIB_STATIC_DIR)
+            shutil.copy2(file, buildsystem.DIST_LIB_DIR)
 
 
     artifactId = config["artifactId"]
