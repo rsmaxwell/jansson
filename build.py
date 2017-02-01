@@ -94,6 +94,8 @@ def compile(config, aol):
 
     buildsystem.mkdir_p(config, aol, buildsystem.BUILD_OUTPUT_MAIN_DIR)
 
+    buildsystem.writeCompileTimeMetadata(config, aol)
+
     if aol.operatingSystem == 'windows':
         makefile = os.path.relpath(buildsystem.SRC_MAIN_MAKE_DIR, buildsystem.BUILD_OUTPUT_MAIN_DIR) + '\\' + str(aol) + '.makefile'
         source = os.path.relpath(BUILD_SOURCE_MAIN_SRC_DIR, buildsystem.BUILD_OUTPUT_TEST_DIR)
@@ -130,7 +132,6 @@ def compile(config, aol):
 
 def distribution(config, aol):
 
-    buildsystem.rmdir(config, aol, buildsystem.DIST_DIR, buildsystem.DISTTEMP_DIR)
     buildsystem.mkdir_p(config, aol, buildsystem.DIST_DIR)
 
     buildsystem.mkdir_p(config, aol, buildsystem.DIST_INCLUDE_DIR)
