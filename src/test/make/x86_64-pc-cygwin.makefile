@@ -7,28 +7,28 @@ CFLAGS_DEBUG = -g
 DEFINES_BASE = -DbuildLabel=$(buildLabel) 
 DEFINES_DEBUG =
 
-LINKFLAGS_BASE = -L/usr/local/lib -L$(DIST)
-LINKFLAGS_DEBUG =
+LINKFLAGS_BASE = -L/usr/local/lib -L$(DIST)/lib
+LINKFLAGS_DEBUG = -g
 
 ifeq ($(BUILD_TYPE),static)
   DEFINES   = $(DEFINES_BASE)
   CFLAGS    = $(CFLAGS_BASE)
-  LINKFLAGS = $(LINKFLAGS_BASE) -Wl,-Bstatic -lcunit -ljansson
+  LINKFLAGS = $(LINKFLAGS_BASE)
 
 else ifeq ($(BUILD_TYPE),static_debug)
   DEFINES   = $(DEFINES_BASE) $(DEFINES_DEBUG)
   CFLAGS    = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
-  LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG) -Wl,-Bstatic -lcunitd -ljansson
+  LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
 
 else ifeq ($(BUILD_TYPE),dynamic)
   DEFINES   = $(DEFINES_BASE)
   CFLAGS    = $(CFLAGS_BASE)
-  LINKFLAGS = $(LINKFLAGS_BASE) -Wl,-Bstatic -lcunit -ljansson
+  LINKFLAGS = $(LINKFLAGS_BASE)
 
 else ifeq ($(BUILD_TYPE),dynamic_debug)
   DEFINES   = $(DEFINES_BASE) $(DEFINES_DEBUG)
   CFLAGS    = $(CFLAGS_BASE) $(CFLAGS_DEBUG)
-  LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG) -Wl,-Bstatic -lcunitd -ljansson
+  LINKFLAGS = $(LINKFLAGS_BASE) $(LINKFLAGS_DEBUG)
 
 else 
   $(error BUILD_TYPE=$(BUILD_TYPE) is not supported)
@@ -40,7 +40,7 @@ SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h) 
 SOURCE_BASENAMES = $(notdir $(SOURCES))
 OBJECTS = $(SOURCE_BASENAMES:.c=.o)
-DEPENDANCES=-Wl,-Bstatic -lcunit -L$(DIST)/lib
+DEPENDANCES= -lcunit -ljansson
 
 
 NAME = janssontest
