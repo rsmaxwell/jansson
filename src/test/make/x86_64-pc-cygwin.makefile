@@ -7,7 +7,7 @@ CFLAGS_DEBUG = -g
 DEFINES_BASE = -DbuildLabel=$(buildLabel) 
 DEFINES_DEBUG =
 
-LINKFLAGS_BASE = -L/usr/local/lib -L$(DIST)/lib
+LINKFLAGS_BASE = 
 LINKFLAGS_DEBUG = -g
 
 ifeq ($(BUILD_TYPE),static)
@@ -40,7 +40,7 @@ SOURCES = $(wildcard $(SOURCE)/*.c)
 HEADERS = $(wildcard $(SOURCE)/*.h) 
 SOURCE_BASENAMES = $(notdir $(SOURCES))
 OBJECTS = $(SOURCE_BASENAMES:.c=.o)
-DEPENDANCES= -lcunit -ljansson
+DEPENDANCES= /usr/local/lib/libcunit.la $(wildcard $(DIST)/lib/*.la)
 
 
 NAME = janssontest

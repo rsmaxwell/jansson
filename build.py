@@ -81,8 +81,32 @@ def configure(config, aol):
         os.chmod(buildsystem.BUILD_SOURCE_MAIN_DIR + configureScript, 0o777)
 
         # Run the configure script
-        p = subprocess.Popen(['bash', configureScript, '--prefix=/usr/local'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=buildsystem.BUILD_SOURCE_MAIN_DIR)
-        buildsystem.checkProcessCompletesOk(config, p, 'Error: Configure failed')
+        if (buildsystem.verbose(config)):
+            print('Working Directory = ' + buildsystem.BUILD_SOURCE_MAIN_DIR)
+
+        args = ['bash', configureScript, '--prefix=/usr/local']
+
+        if buildsystem.verbose(config):
+            print('Args = ' + str(args))
+
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=buildsystem.BUILD_SOURCE_MAIN_DIR)
+        stdout, stderr = p.communicate()
+        returncode = p.wait()
+
+        if (returncode != 0):
+            print('Error: test ' + file + ' failed')
+
+        if (returncode != 0) or (buildsystem.verbose(config)):
+            print('---------[ stdout ]-----------------------------------------------------------------')
+            print(stdout.decode('utf-8'))
+            print('---------[ stderr ]-----------------------------------------------------------------')
+            print(stderr.decode('utf-8'))
+            print('---------[ returncode = ' + str(returncode) + ']--------------------------------------------------------')
+
+        if (returncode != 0):
+            sys.exit(1)
+
+
 
 
 ####################################################################################################
@@ -117,13 +141,71 @@ def compile(config, aol):
 
 
     else:     # Linux or MinGW or CygWin
-        args = ['make', 'clean', 'install']
+
+        workingDir = buildsystem.BUILD_SOURCE_MAIN_DIR
+
+        if (buildsystem.verbose(config)):
+            print('Working Directory = ' + workingDir)
+
+        args = ['make']
 
         if buildsystem.verbose(config):
             print('Args = ' + str(args))
 
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=buildsystem.BUILD_SOURCE_MAIN_DIR)
-        buildsystem.checkProcessCompletesOk(config, p, 'Error: Make failed', expectedReturnCodes=[0,1])
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=workingDir)
+        stdout, stderr = p.communicate()
+        returncode = p.wait()
+       
+        if (returncode != 0):
+            print('Error: test ' + file + ' failed')
+
+        if (returncode != 0) or (buildsystem.verbose(config)):
+            print('---------[ stdout ]-----------------------------------------------------------------')
+            print(stdout.decode('utf-8'))
+            print('---------[ stderr ]-----------------------------------------------------------------')
+            print(stderr.decode('utf-8'))
+            print('---------[ returncode = ' + str(returncode) + ']--------------------------------------------------------')
+
+        if (returncode != 0):
+            sys.exit(1)
+
+
+
+
+
+#       workingDir = buildsystem.BUILD_SOURCE_MAIN_DIR
+#
+#       if (buildsystem.verbose(config)):
+#           print('Working Directory = ' + workingDir)
+#
+#       args = ['make', 'check']
+#
+#       if buildsystem.verbose(config):
+#           print('Args = ' + str(args))
+#
+#       p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=workingDir)
+#       stdout, stderr = p.communicate()
+#       returncode = p.wait()
+#
+#       if (returncode != 0):
+#           print('Error: test ' + file + ' failed')
+#
+#       if (returncode != 0) or (buildsystem.verbose(config)):
+#           print('---------[ stdout ]-----------------------------------------------------------------')
+#           print(stdout.decode('utf-8'))
+#           print('---------[ stderr ]-----------------------------------------------------------------')
+#           print(stderr.decode('utf-8'))
+#           print('---------[ returncode = ' + str(returncode) + ']--------------------------------------------------------')
+#
+#       if (returncode != 0):
+#           sys.exit(1)
+
+
+
+
+
+
+
 
 
 ####################################################################################################
