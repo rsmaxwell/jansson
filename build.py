@@ -249,10 +249,6 @@ def distribution(config, aol):
             shutil.copy2(file, buildsystem.DIST_LIB_DIR)
 
 
-    artifactId = config["artifactId"]
-    localfile = buildsystem.BUILD_ARTIFACT_DIR + '/' + artifactId + '-' + str(aol)
-    shutil.make_archive(localfile, buildsystem.PACKAGING, buildsystem.DIST_DIR)
-
 
 ####################################################################################################
 # Call main routine
