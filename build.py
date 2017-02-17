@@ -21,7 +21,7 @@ BUILD_SOURCE_MAIN_SRC_LIB_DIR = './build/source/main/src/.libs/'
 
 def generate(config, aol):
 
-    buildsystem.mkdir_p(config, aol, buildsystem.BUILD_TEMP_DIR)
+    buildsystem.mkdir(config, aol, buildsystem.BUILD_TEMP_DIR)
 
     srctargz = buildsystem.SRC_MAIN_ARCHIVE_DIR + 'jansson-2.9.tar.gz'
 
@@ -116,7 +116,7 @@ def configure(config, aol):
 def compile(config, aol):
     print('compile')
 
-    buildsystem.mkdir_p(config, aol, buildsystem.BUILD_OUTPUT_MAIN_DIR)
+    buildsystem.mkdir(config, aol, buildsystem.BUILD_OUTPUT_MAIN_DIR)
 
     buildsystem.writeCompileTimeMetadata(config, aol)
 
@@ -214,18 +214,18 @@ def compile(config, aol):
 
 def distribution(config, aol):
 
-    buildsystem.mkdir_p(config, aol, buildsystem.DIST_DIR)
+    buildsystem.mkdir(config, aol, buildsystem.DIST_DIR)
 
-    buildsystem.mkdir_p(config, aol, buildsystem.DIST_INCLUDE_DIR)
-    buildsystem.mkdir_p(config, aol, buildsystem.DIST_LIB_DIR)
-    buildsystem.mkdir_p(config, aol, buildsystem.BUILD_ARTIFACT_DIR)
+    buildsystem.mkdir(config, aol, buildsystem.DIST_INCLUDE_DIR)
+    buildsystem.mkdir(config, aol, buildsystem.DIST_LIB_DIR)
+    buildsystem.mkdir(config, aol, buildsystem.BUILD_ARTIFACT_DIR)
 
     shutil.copy2(BUILD_SOURCE_MAIN_SRC_DIR + 'jansson.h', buildsystem.DIST_INCLUDE_DIR)
     shutil.copy2(BUILD_SOURCE_MAIN_SRC_DIR + 'jansson_config.h', buildsystem.DIST_INCLUDE_DIR)
 
     if aol.operatingSystem == 'windows':
-        buildsystem.mkdir_p(config, aol, buildsystem.DIST_LIB_SHARED_DIR)
-        buildsystem.mkdir_p(config, aol, buildsystem.DIST_LIB_STATIC_DIR + 'exe/')
+        buildsystem.mkdir(config, aol, buildsystem.DIST_LIB_SHARED_DIR)
+        buildsystem.mkdir(config, aol, buildsystem.DIST_LIB_STATIC_DIR + 'exe/')
 
         shutil.copy2(buildsystem.BUILD_OUTPUT_MAIN_DIR + 'shared/jansson.lib', buildsystem.DIST_LIB_SHARED_DIR)
         shutil.copy2(buildsystem.BUILD_OUTPUT_MAIN_DIR + 'shared/jansson.dll', buildsystem.DIST_LIB_SHARED_DIR)
