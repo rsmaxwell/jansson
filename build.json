@@ -1,0 +1,40 @@
+{
+   "groupId": "com.rsmaxwell",
+   "artifactId": "jansson-2.9",
+   "version": "${version}",
+   "properties": {
+      "repository": "snapshots",
+      "version": "0.0.1-SNAPSHOT"
+   },
+   "dependencies": [
+      {
+         "groupId": "com.rsmaxwell",
+         "artifactId": "cunit-2.1.2",
+         "version": "0.0.1-SNAPSHOT"
+      }
+   ],
+   "repositories": [
+      {
+         "id": "MaxwellHouse",
+         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/releases",
+         "updatePolicy": "interval:5256000"
+      },
+      {
+         "id": "MaxwellHouse",
+         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/snapshots",
+      }
+   ],
+   "distributionManagement": {
+      "repository": {
+         "deployment": {
+            "id": "MaxwellHouse",
+            "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/${repository}"
+         },
+         "admin": {
+            "id": "MaxwellHouseAdmin",
+            "url": "http://www.rsmaxwell.co.uk/nexus/service/local/metadata/repositories/${repository}/content"
+         }
+      }
+   }
+}
+
