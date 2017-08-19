@@ -16,11 +16,11 @@
    "repositories": [
       {
          "id": "MaxwellHouse",
-         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/releases"
+         "url": "http://192.168.0.10/nexus/content/repositories/releases"
       },
       {
          "id": "MaxwellHouse",
-         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/snapshots",
+         "url": "http://192.168.0.10/nexus/content/repositories/snapshots",
          "updatePolicy": "interval:1"
       }
    ],
@@ -28,11 +28,11 @@
       "repository": {
          "deployment": {
             "id": "MaxwellHouse",
-            "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/${repository}"
+            "url": "http://192.168.0.10/nexus/content/repositories/${repository}"
          },
          "admin": {
             "id": "MaxwellHouseAdmin",
-            "url": "http://www.rsmaxwell.co.uk/nexus/service/local/metadata/repositories/${repository}/content"
+            "url": "http://192.168.0.10/nexus/service/local/metadata/repositories/${repository}/content"
          }
       }
    }
