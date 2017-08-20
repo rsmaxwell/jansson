@@ -129,9 +129,9 @@ def compile(config, aol):
         env['BUILD_TYPE'] = 'static'
         env['SOURCE'] = source
         env['DIST'] = dist
-        env['INSTALL'] = buildsystem.INSTALL_DIR      
+        env['INSTALL'] = buildsystem.INSTALL_DIR
 
-        args = ['make', '-f', makefile, 'clean', 'install']
+        args = ['make', '-f', makefile, 'clean', 'all']
 
         if buildsystem.verbose(config):
             print('Args = ' + str(args))
@@ -155,7 +155,7 @@ def compile(config, aol):
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=workingDir)
         stdout, stderr = p.communicate()
         returncode = p.wait()
-       
+
         if (returncode != 0):
             print('Error: test ' + file + ' failed')
 
