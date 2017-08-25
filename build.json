@@ -16,12 +16,12 @@
    "repositories": [
       {
          "id": "MaxwellHouse",
-         "url": "http://192.168.0.10/nexus/content/repositories/releases"
+         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/releases",
+         "updatePolicy": "interval:5256000"
       },
       {
          "id": "MaxwellHouse",
-         "url": "http://192.168.0.10/nexus/content/repositories/snapshots",
-         "updatePolicy": "interval:1"
+         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/snapshots"
       }
    ],
    "distributionManagement": {
