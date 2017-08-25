@@ -129,7 +129,7 @@ def compile(config, aol):
         env['BUILD_TYPE'] = 'static'
         env['SOURCE'] = source
         env['DIST'] = dist
-        env['INSTALL'] = buildsystem.INSTALL_DIR      
+        env['INSTALL'] = buildsystem.INSTALL_DIR
 
         args = ['make', '-f', makefile, 'clean', 'install']
 
@@ -155,7 +155,7 @@ def compile(config, aol):
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=workingDir)
         stdout, stderr = p.communicate()
         returncode = p.wait()
-       
+
         if (returncode != 0):
             print('Error: test ' + file + ' failed')
 
@@ -201,11 +201,21 @@ def compile(config, aol):
 #           sys.exit(1)
 
 
+####################################################################################################
+# Make check
+####################################################################################################
 
+def check(config, aol):
+    print('check')
 
+    env = os.environ
 
+    if buildsystem.verbose(config):
+        print('cd ' + buildsystem.BUILD_SOURCE_MAIN_DIR)
+        print('make check')
 
-
+    p = subprocess.Popen(['make', 'check'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, cwd=buildsystem.BUILD_SOURCE_MAIN_DIR)
+    buildsystem.checkProcessCompletesOk(config, p, 'Error: Check failed')
 
 
 ####################################################################################################
@@ -255,4 +265,4 @@ def distribution(config, aol):
 ####################################################################################################
 
 if __name__ == "__main__":
-    buildsystem.main(generate=generate, configure=configure, compile=compile, distribution=distribution)
+    buildsystem.main(generate=generate, configure=configure, compile=compile, check=check, distribution=distribution)

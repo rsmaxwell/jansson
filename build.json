@@ -21,7 +21,7 @@
       },
       {
          "id": "MaxwellHouse",
-         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/snapshots",
+         "url": "http://www.rsmaxwell.co.uk/nexus/content/repositories/snapshots"
       }
    ],
    "distributionManagement": {
