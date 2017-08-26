@@ -231,11 +231,13 @@ def compile(config, aol):
 #       if (returncode != 0):
 #           sys.exit(1)
 
+####################################################################################################
+# Make check
+####################################################################################################
 
-
-
-
-
+def check(config, aol):
+    print('check')
+    pass
 
 
 
@@ -286,4 +288,4 @@ def distribution(config, aol):
 ####################################################################################################
 
 if __name__ == "__main__":
-    buildsystem.main(generate=generate, configure=configure, compile=compile, distribution=distribution)
+    buildsystem.main(generate=generate, configure=configure, compile=compile, check=check, distribution=distribution)
