@@ -155,7 +155,7 @@ def compile(config, aol):
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=workingDir)
         stdout, stderr = p.communicate()
         returncode = p.wait()
-       
+
         if (returncode != 0):
             print('Error: test ' + file + ' failed')
 
