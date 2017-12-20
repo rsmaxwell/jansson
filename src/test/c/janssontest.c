@@ -101,11 +101,11 @@ void testJansson(void) {
 
   json_t *root = json_object();
   json_t *json_arr = json_array();
-  json_t *root2; 
+  json_t *root2;
   size_t flags;
   json_error_t error;
-  json_t *destID; 
-  int destID_value;  
+  json_t *destID;
+  int destID_value;
 
   json_object_set_new( root, "destID", json_integer( 1 ) );
   json_object_set_new( root, "command", json_string("enable") );
@@ -130,7 +130,96 @@ void testJansson(void) {
       CU_FAIL("destID is not an integer");
   }
   destID_value = (int) json_number_value(destID);
-  CU_ASSERT(1 == destID_value); 
+  CU_ASSERT(1 == destID_value);
+}
+
+/* Simple janson_loads.
+ */
+void testJsonLoads(void)
+{
+    json_t *rootJson;
+    json_t *nameJson;
+    json_error_t error;
+    char *text = "{ \"name\":\"fred\" }";
+    const char *name = NULL;
+
+    rootJson = json_loads(text, 0, &error);
+
+    if (!rootJson) {
+        printf("error on line %d: %s\n", error.line, error.text);
+        CU_FAIL("json_loads failed (1)");
+    }
+
+    nameJson = json_object_get(rootJson, "name");
+    if (!json_is_string(nameJson)) {
+        printf("error 'name' field is not a string\n");
+        json_decref(rootJson);
+        CU_FAIL("json_loads failed (2)");
+    }
+
+    name = json_string_value(nameJson);
+    if (name == NULL) {
+        printf("error 'name' field cannot get the string value\n");
+        json_decref(rootJson);
+        CU_FAIL("Cannot get string value");
+    }
+
+    if (strcmp(name, "fred") != 0) {
+        printf("error getting value of 'name' field\n");
+        json_decref(rootJson);
+        CU_FAIL("Got wrong string value");
+    }
+}
+
+
+/* Simple janson_loads.
+ */
+void testJsonLoadf(void)
+{
+    json_t *rootJson;
+    json_t *nameJson;
+    json_error_t error;
+    char *text = "{ \"name\":\"fred\" }";
+    const char *name = NULL;
+    char message[256];
+
+    FILE *fp = fopen("data.json", "w");
+    if (fp == NULL) {
+        CU_FAIL("error opening test data for writing");
+    }
+
+    fprintf(fp, "{ \"name\":\"fred\" }");
+    fclose(fp);
+
+    fp = fopen("data.json", "r");
+    if (fp == NULL) {
+        CU_FAIL("error opening test data for reading");
+    }
+
+    rootJson = json_loadf(fp, 0, &error);
+    fclose(fp);
+    if (!rootJson) {
+        sprintf(message, "json_loadf failed on line %d: %s\n", error.line, error.text);
+        CU_FAIL(message);
+    }
+
+    nameJson = json_object_get(rootJson, "name");
+    if (!json_is_string(nameJson)) {
+        json_decref(rootJson);
+        CU_FAIL("json error on field 'name': not a string");
+    }
+
+    name = json_string_value(nameJson);
+    if (name == NULL) {
+        json_decref(rootJson);
+        CU_FAIL("Cannot get string value for json field 'name'");
+    }
+
+    if (strcmp(name, "fred") != 0) {
+        json_decref(rootJson);
+        sprintf(message, "Got wrong string value for json field 'name'. Got '%s' expected '%s'", name, "fred");
+        CU_FAIL(message);
+    }
 }
 
 /* The main() function for setting up and running the tests.
@@ -158,7 +247,9 @@ int main() {
    /* NOTE - ORDER IS IMPORTANT - MUST TEST fread() AFTER fprintf() */
    if ((NULL == CU_add_test(pSuite, "test of fprintf()", testFPRINTF)) ||
        (NULL == CU_add_test(pSuite, "test of fread()", testFREAD)) ||
-       (NULL == CU_add_test(pSuite, "test of Jansson()", testJansson)))
+       (NULL == CU_add_test(pSuite, "test of Jansson()", testJansson)) ||
+       (NULL == CU_add_test(pSuite, "test of json_loads()", testJsonLoads)) ||
+       (NULL == CU_add_test(pSuite, "test of json_loadf()", testJsonLoadf)))
    {
       CU_cleanup_registry();
       return CU_get_error();

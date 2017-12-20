@@ -129,12 +129,20 @@ def compile(config, aol):
         env['BUILD_TYPE'] = 'static'
         env['SOURCE'] = source
         env['DIST'] = dist
-        env['INSTALL'] = buildsystem.INSTALL_DIR      
+        env['INSTALL'] = buildsystem.INSTALL_DIR
 
-        args = ['make', '-f', makefile, 'clean', 'install']
+        args = ['make', '-f', makefile, 'clean', 'all']
 
         if buildsystem.verbose(config):
             print('Args = ' + str(args))
+
+        if buildsystem.debug(config):
+            print('cd ' + buildsystem.BUILD_OUTPUT_MAIN_DIR)
+            print('set BUILD_TYPE=static')
+            print('set SOURCE=' + source)
+            print('set DIST=' + dist)
+            print('set INSTALL=' + buildsystem.INSTALL_DIR)
+            print('make -f ' + makefile + ' clean all')
 
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, cwd=buildsystem.BUILD_OUTPUT_MAIN_DIR)
         buildsystem.checkProcessCompletesOk(config, p, 'Error: Make failed', expectedReturnCodes=[0,1])
@@ -144,12 +152,11 @@ def compile(config, aol):
 
         workingDir = buildsystem.BUILD_SOURCE_MAIN_DIR
 
-        if (buildsystem.verbose(config)):
-            print('Working Directory = ' + workingDir)
-
         args = ['make']
 
         if buildsystem.verbose(config):
+            print('Working Directory = ' + workingDir)
+            print('Making jansson')
             print('Args = ' + str(args))
 
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=workingDir)
@@ -170,6 +177,30 @@ def compile(config, aol):
             sys.exit(1)
 
 
+
+
+        args = ['make', 'check']
+
+        if buildsystem.verbose(config):
+            print('Making jansson test programs')
+            print('Args = ' + str(args))
+
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=workingDir)
+        stdout, stderr = p.communicate()
+        returncode = p.wait()
+
+        if (returncode != 0):
+            print('Error: test ' + file + ' failed')
+
+        if (returncode != 0) or (buildsystem.verbose(config)):
+            print('---------[ stdout ]-----------------------------------------------------------------')
+            print(stdout.decode('utf-8'))
+            print('---------[ stderr ]-----------------------------------------------------------------')
+            print(stderr.decode('utf-8'))
+            print('---------[ returncode = ' + str(returncode) + ']--------------------------------------------------------')
+
+        if (returncode != 0):
+            sys.exit(1)
 
 
 
@@ -200,11 +231,13 @@ def compile(config, aol):
 #       if (returncode != 0):
 #           sys.exit(1)
 
+####################################################################################################
+# Make check
+####################################################################################################
 
-
-
-
-
+def check(config, aol):
+    print('check')
+    pass
 
 
 
@@ -255,4 +288,4 @@ def distribution(config, aol):
 ####################################################################################################
 
 if __name__ == "__main__":
-    buildsystem.main(generate=generate, configure=configure, compile=compile, distribution=distribution)
+    buildsystem.main(generate=generate, configure=configure, compile=compile, check=check, distribution=distribution)
